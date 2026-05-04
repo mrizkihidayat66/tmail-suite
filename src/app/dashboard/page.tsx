@@ -5,7 +5,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { Users, Mail, Key, Activity, RefreshCw } from "lucide-react";
 import { formatRelative } from "@/lib/shared/utils";
-import type { SystemStats } from "@/types";
+import type { SystemStats, EmailRow } from "@/types";
 
 function StatCard({
   label,
@@ -45,7 +45,7 @@ export default function DashboardPage() {
     refetchInterval: 30_000,
   });
 
-  const { data: recentData } = useQuery<{ emails: any[] }>({
+  const { data: recentData } = useQuery<{ emails: EmailRow[] }>({
     queryKey: ["recent-emails"],
     queryFn: () => fetch("/api/v1/emails/recent?limit=5").then((r) => r.json()),
     refetchInterval: 30_000,

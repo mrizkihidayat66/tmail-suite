@@ -16,12 +16,16 @@ function normalizeEmail(email: {
   sizeBytes?: number | null;
   [key: string]: unknown;
 }) {
+  const { fromAddress, fromName, isRead, sizeBytes, snippet, ...rest } = email;
   return {
-    ...email,
-    from: { address: email.fromAddress, name: email.fromName ?? null },
-    seen: email.isRead,
-    intro: email.snippet ?? null,
-    size: email.sizeBytes ?? null,
+    ...rest,
+    fromAddress,
+    fromName: fromName ?? null,
+    from: { address: fromAddress, name: fromName ?? null },
+    isRead,
+    seen: isRead,
+    snippet: snippet ?? null,
+    sizeBytes: sizeBytes ?? null,
   };
 }
 
@@ -145,6 +149,26 @@ export async function searchEmails(query: string, accountId?: string, limit = 50
   });
 
   return emails.map(normalizeEmail);
+}
+
+export async function reconcileEmailCounts(): Promise<number> {
+  const accounts = await db.tempAccount.findMany({
+    where: { deletedAt: null },
+    select: { id: true, emailCount: true },
+  });
+
+  let fixed = 0;
+  for (const account of accounts) {
+    const actual = await db.email.count({ where: { accountId: account.id } });
+    if (actual !== account.emailCount) {
+      await db.tempAccount.update({
+        where: { id: account.id },
+        data: { emailCount: actual },
+      });
+      fixed++;
+    }
+  }
+  return fixed;
 }
 
 export async function getRecentEmails(limit = 20) {

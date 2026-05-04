@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Globe, Settings2, Eye, EyeOff, KeyRound, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/shared/utils";
+import type { MeResponse, HealthStatus, AdminUserRow, GmailStatus, DomainRow } from "@/types";
 
 type Tab = "account" | "system" | "users" | "gmail" | "domains" | "config";
 
@@ -45,28 +46,28 @@ export default function SettingsPage() {
     }
   }, [searchParams]);
 
-  const { data: me, refetch: refetchMe } = useQuery<any>({
+  const { data: me, refetch: refetchMe } = useQuery<MeResponse>({
     queryKey: ["me"],
     queryFn: () => fetch("/api/v1/auth/me").then((r) => r.json()),
   });
 
-  const { data: health } = useQuery<any>({
+  const { data: health } = useQuery<HealthStatus>({
     queryKey: ["health"],
     queryFn: () => fetch("/api/v1/admin/health").then((r) => r.json()),
     refetchInterval: 30_000,
   });
 
-  const { data: usersData } = useQuery<{ users: any[] }>({
+  const { data: usersData } = useQuery<{ users: AdminUserRow[] }>({
     queryKey: ["admin-users"],
     queryFn: () => fetch("/api/v1/admin/users").then((r) => r.json()),
   });
 
-  const { data: gmailStatus, refetch: refetchGmail } = useQuery<any>({
+  const { data: gmailStatus, refetch: refetchGmail } = useQuery<GmailStatus>({
     queryKey: ["gmail-status"],
     queryFn: () => fetch("/api/v1/gmail/status").then((r) => r.json()),
   });
 
-  const { data: domainsData, refetch: refetchDomains } = useQuery<{ domains: any[] }>({
+  const { data: domainsData, refetch: refetchDomains } = useQuery<{ domains: DomainRow[] }>({
     queryKey: ["admin-domains"],
     queryFn: () => fetch("/api/v1/admin/domains").then((r) => r.json()),
   });

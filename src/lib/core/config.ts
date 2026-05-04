@@ -8,6 +8,7 @@ export const CONFIG_KEYS = {
   GOOGLE_REDIRECT_URI: "google_redirect_uri",
   GMAIL_CATCHALL_EMAIL: "gmail_catchall_email",
   GMAIL_POLL_INTERVAL: "gmail_poll_interval",
+  GMAIL_LAST_POLL_AT: "gmail_last_poll_at",
 } as const;
 
 export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS];
@@ -18,20 +19,23 @@ const SENSITIVE_KEYS = new Set<string>([
 ]);
 
 const cache = new Map<string, string>();
-let cachePopulated = false;
+let populatePromise: Promise<void> | null = null;
 
 async function populateCache(): Promise<void> {
-  if (cachePopulated) return;
-  const rows = await db.appConfig.findMany();
-  for (const row of rows) {
-    cache.set(row.key, row.value);
-  }
-  cachePopulated = true;
+  if (populatePromise) return populatePromise;
+  if (cache.size > 0) return;
+  populatePromise = (async () => {
+    const rows = await db.appConfig.findMany();
+    for (const row of rows) {
+      cache.set(row.key, row.value);
+    }
+  })();
+  await populatePromise;
 }
 
 function invalidateCache(): void {
   cache.clear();
-  cachePopulated = false;
+  populatePromise = null;
 }
 
 export async function getConfig(key: ConfigKey): Promise<string | null> {

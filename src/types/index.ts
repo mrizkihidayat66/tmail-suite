@@ -40,6 +40,9 @@ export interface EmailRow {
   receivedAt: string;
   isRead: boolean;
   hasAttachments: boolean;
+  sizeBytes: number | null;
+  seen: boolean;
+  from: { address: string; name: string | null };
 }
 
 export interface EmailDetail extends EmailRow {
@@ -85,8 +88,16 @@ export interface AdminUserRow {
   username: string;
   displayName: string | null;
   isActive: boolean;
+  mustChangePassword: boolean;
   lastLoginAt: string | null;
   createdAt: string;
+}
+
+export interface MeResponse {
+  id: string;
+  username: string;
+  displayName: string | null;
+  mustChangePassword: boolean;
 }
 
 export interface SystemStats {
@@ -98,4 +109,59 @@ export interface SystemStats {
   totalApiKeys: number;
   activeApiKeys: number;
   gmailConnected: boolean;
+  totalDomains: number;
+  activeDomains: number;
 }
+
+export interface DomainRow {
+  id: string;
+  domain: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface GmailStatus {
+  connected: boolean;
+  token: {
+    userEmail: string;
+    expiresAt: string;
+    updatedAt: string;
+    scope: string;
+  } | null;
+}
+
+export interface HealthStatus {
+  status: string;
+  database: string;
+  gmail: string;
+}
+
+export interface AuditLogRow {
+  id: string;
+  actorType: string;
+  actorId: string | null;
+  actorName: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  targetName: string | null;
+  metadata: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface EmailsResponse {
+  emails: EmailRow[];
+  total: number;
+  unreadCount: number;
+  page: number;
+  limit: number;
+}
+
+export interface AccountsResponse {
+  accounts: AccountRow[];
+  total: number;
+  page: number;
+  limit: number;
+}
+

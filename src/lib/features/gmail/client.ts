@@ -1,6 +1,6 @@
 import { google, gmail_v1 } from "googleapis";
 import { db } from "@/lib/core/db";
-import { getConfigOrThrow, getConfig, CONFIG_KEYS } from "@/lib/core/config";
+import { getConfigOrThrow, getConfig, setConfig, CONFIG_KEYS } from "@/lib/core/config";
 import { AppError } from "@/lib/core/errors";
 
 async function getOAuthCredentials() {
@@ -88,11 +88,26 @@ export async function listNewMessages(maxResults = 100): Promise<gmail_v1.Schema
 
   if (domains.length === 0) return [];
 
-  const domainQuery = domains.map((d) => `to:*@${d.domain}`).join(" OR ");
-  const q = `(${domainQuery}) newer_than:1d`;
+  const lastPollAt = await getConfig(CONFIG_KEYS.GMAIL_LAST_POLL_AT);
+  let afterFilter: string;
 
+  if (lastPollAt) {
+    const epochSeconds = Math.floor(new Date(lastPollAt).getTime() / 1000);
+    afterFilter = `after:${epochSeconds}`;
+  } else {
+    afterFilter = "newer_than:1d";
+  }
+
+  const domainQuery = domains.map((d) => `to:*@${d.domain}`).join(" OR ");
+  const q = `(${domainQuery}) ${afterFilter}`;
+
+  const pollTime = new Date().toISOString();
   const res = await gmail.users.messages.list({ userId: "me", q, maxResults });
-  return res.data.messages ?? [];
+  const messages = res.data.messages ?? [];
+
+  await setConfig(CONFIG_KEYS.GMAIL_LAST_POLL_AT, pollTime);
+
+  return messages;
 }
 
 export async function fetchMessage(messageId: string): Promise<gmail_v1.Schema$Message> {

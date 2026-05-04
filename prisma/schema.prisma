@@ -27,18 +27,20 @@ model AdminUser {
 }
 
 model SessionToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  userAgent String?
-  ipAddress String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  token      String   @unique
+  userId     String
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
   lastUsedAt DateTime @default(now())
+  expiresAt  DateTime @default(now())
 
   user AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
   @@index([userId])
+  @@index([expiresAt])
   @@map("session_tokens")
 }
 

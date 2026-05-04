@@ -2,7 +2,6 @@
 const config = {
   output: "standalone",
   experimental: {
-    instrumentationHook: true,
     serverComponentsExternalPackages: ["bcryptjs"],
   },
 };

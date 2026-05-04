@@ -25,7 +25,7 @@ const schema = z.object({
 export const POST = withAuth(async (req: NextRequest, session): Promise<NextResponse> => {
   try {
     const body = schema.parse(await req.json());
-    const results = await bulkCreateAccounts(body.count, {
+    const { results, failures } = await bulkCreateAccounts(body.count, {
       ttlHours: body.ttlHours,
       label: body.label,
       usernamePattern: body.usernamePattern,
@@ -38,7 +38,7 @@ export const POST = withAuth(async (req: NextRequest, session): Promise<NextResp
       actorId: session.sub,
       actorName: session.username,
       action: "account.bulk_create",
-      metadata: { count: results.length, label: body.label },
+      metadata: { requested: body.count, created: results.length, failed: failures.length, label: body.label },
     });
 
     return created({
@@ -47,6 +47,7 @@ export const POST = withAuth(async (req: NextRequest, session): Promise<NextResp
         password: plainPassword,
       })),
       count: results.length,
+      failures,
     });
   } catch (e) {
     return handleError(e);

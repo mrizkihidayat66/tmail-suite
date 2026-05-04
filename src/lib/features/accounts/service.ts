@@ -133,6 +133,7 @@ export async function bulkCreateAccounts(
   }
 ) {
   const results: Array<{ account: Awaited<ReturnType<typeof db.tempAccount.create>>; plainPassword: string }> = [];
+  const failures: Array<{ index: number; reason: string }> = [];
 
   for (let i = 0; i < count; i++) {
     try {
@@ -144,10 +145,10 @@ export async function bulkCreateAccounts(
         domain: opts.domain,
       });
       results.push({ account, plainPassword });
-    } catch {
-      continue;
+    } catch (e) {
+      failures.push({ index: i, reason: e instanceof Error ? e.message : "unknown error" });
     }
   }
 
-  return results;
+  return { results, failures };
 }

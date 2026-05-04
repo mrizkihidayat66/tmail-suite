@@ -2,6 +2,16 @@ const attempts = new Map<string, { count: number; resetAt: number }>();
 
 const MAX_ATTEMPTS = 10;
 const WINDOW_MS = 15 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of attempts) {
+      if (now > entry.resetAt) attempts.delete(ip);
+    }
+  }, CLEANUP_INTERVAL_MS).unref();
+}
 
 export function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();

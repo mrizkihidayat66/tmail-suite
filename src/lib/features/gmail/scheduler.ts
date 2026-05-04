@@ -2,9 +2,12 @@ import cron from "node-cron";
 import { getConfig, CONFIG_KEYS } from "@/lib/core/config";
 import { pollAndProcess, deactivateExpiredAccounts } from "./processor";
 import { isGmailConnected } from "./client";
+import { reconcileEmailCounts } from "@/lib/features/emails/service";
+import { deleteExpiredSessions } from "@/lib/core/auth";
 
 let pollTask: cron.ScheduledTask | null = null;
 let cleanupTask: cron.ScheduledTask | null = null;
+let reconcileTask: cron.ScheduledTask | null = null;
 let initialized = false;
 let currentInterval = 0;
 
@@ -44,8 +47,19 @@ export async function startScheduler(): Promise<void> {
     try {
       const count = await deactivateExpiredAccounts();
       if (count > 0) console.log(`[scheduler] cleanup: deactivated ${count} expired accounts`);
+      const sessions = await deleteExpiredSessions();
+      if (sessions > 0) console.log(`[scheduler] cleanup: deleted ${sessions} expired sessions`);
     } catch (e) {
       console.error("[scheduler] cleanup error:", e);
+    }
+  });
+
+  reconcileTask = cron.schedule("0 3 * * *", async () => {
+    try {
+      const fixed = await reconcileEmailCounts();
+      if (fixed > 0) console.log(`[scheduler] reconcile: fixed emailCount for ${fixed} accounts`);
+    } catch (e) {
+      console.error("[scheduler] reconcile error:", e);
     }
   });
 
@@ -55,6 +69,7 @@ export async function startScheduler(): Promise<void> {
 export function stopScheduler(): void {
   pollTask?.stop();
   cleanupTask?.stop();
+  reconcileTask?.stop();
   initialized = false;
   currentInterval = 0;
 }

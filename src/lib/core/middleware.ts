@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, SessionPayload } from "./auth";
+import { verifyApiKey } from "@/lib/features/api-keys/service";
 import { handleError } from "./response";
 import { UnauthorizedError } from "./errors";
 
@@ -13,14 +14,26 @@ type AuthedHandler<P extends Record<string, string> = Record<string, string>> = 
   ctx: RouteContext<P>
 ) => Promise<NextResponse>;
 
+async function resolveAuth(req: NextRequest): Promise<SessionPayload> {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer tm_")) {
+    const rawKey = authHeader.slice(7);
+    const key = await verifyApiKey(rawKey);
+    if (!key) throw new UnauthorizedError("Invalid or expired API key");
+    return { sub: key.createdById, username: `apikey:${key.keyPrefix}` };
+  }
+
+  const token = req.cookies.get("token")?.value;
+  if (!token) throw new UnauthorizedError();
+  return verifySession(token);
+}
+
 export function withAuth<P extends Record<string, string> = Record<string, string>>(
   handler: AuthedHandler<P>
 ) {
   return async (req: NextRequest, ctx: { params?: P } = {}): Promise<NextResponse> => {
     try {
-      const token = req.cookies.get("token")?.value;
-      if (!token) throw new UnauthorizedError();
-      const session = await verifySession(token);
+      const session = await resolveAuth(req);
       return await handler(req, session, { params: ctx.params ?? ({} as P) });
     } catch (error) {
       return handleError(error);
