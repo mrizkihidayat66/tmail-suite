@@ -1,0 +1,196 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id                 String    @id @default(uuid())
+  username           String    @unique
+  passwordHash       String
+  displayName        String?
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  sessions  SessionToken[]
+  apiKeys   ApiKey[]
+  auditLogs AuditLog[]
+
+  @@map("admin_users")
+}
+
+model SessionToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  user AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("session_tokens")
+}
+
+model AppConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_config")
+}
+
+model Domain {
+  id        String   @id @default(uuid())
+  domain    String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("domains")
+}
+
+model TempAccount {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  displayName  String?
+  label        String?
+  notes        String?
+  ttlHours     Int       @default(24)
+  expiresAt    DateTime?
+  isActive     Boolean   @default(true)
+  emailCount   Int       @default(0)
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  emails Email[]
+
+  @@index([email])
+  @@index([label])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([deletedAt])
+  @@map("temp_accounts")
+}
+
+model Email {
+  id             String   @id @default(uuid())
+  accountId      String
+  gmailMessageId String   @unique
+  gmailThreadId  String?
+  fromAddress    String
+  fromName       String?
+  toAddress      String
+  ccAddresses    String?
+  bccAddresses   String?
+  subject        String?
+  snippet        String?
+  bodyText       String?
+  bodyHtml       String?
+  rawHeaders     String?
+  gmailLabels    String?
+  isRead         Boolean  @default(false)
+  hasAttachments Boolean  @default(false)
+  sizeBytes      Int?
+  receivedAt     DateTime
+  createdAt      DateTime @default(now())
+
+  account     TempAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  attachments EmailAttachment[]
+
+  @@index([accountId])
+  @@index([accountId, receivedAt])
+  @@index([accountId, isRead])
+  @@index([fromAddress])
+  @@index([receivedAt])
+  @@map("emails")
+}
+
+model EmailAttachment {
+  id          String   @id @default(uuid())
+  emailId     String
+  gmailAttId  String?
+  filename    String
+  contentType String?
+  sizeBytes   Int?
+  storagePath String?
+  createdAt   DateTime @default(now())
+
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([emailId])
+  @@map("email_attachments")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  keyHash     String    @unique
+  keyPrefix   String
+  scopes      String    @default("[\"*\"]")
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  usageCount  Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  revokedAt   DateTime?
+
+  createdBy AdminUser @relation(fields: [createdById], references: [id])
+
+  @@index([keyHash])
+  @@index([isActive])
+  @@map("api_keys")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorType  String
+  actorId    String?
+  actorName  String?
+  action     String
+  targetType String?
+  targetId   String?
+  targetName String?
+  metadata   String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor AdminUser? @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+model GmailToken {
+  id           String   @id @default(uuid())
+  userEmail    String   @unique
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("gmail_tokens")
+}
