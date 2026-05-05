@@ -7,6 +7,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (token) await deleteSession(token);
 
   const res = ok({ message: "Logged out" });
-  res.cookies.set("token", "", { maxAge: 0, path: "/" });
+  res.cookies.set("token", "", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+    maxAge: 0,
+    path: "/",
+  });
   return res;
 }

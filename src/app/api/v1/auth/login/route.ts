@@ -4,8 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/core/db";
 import { createSession } from "@/lib/core/auth";
 import { ok, handleError } from "@/lib/core/response";
-import { UnauthorizedError, AppError } from "@/lib/core/errors";
-import { getEnv } from "@/config/env";
+import { UnauthorizedError } from "@/lib/core/errors";
 import { checkRateLimit, resetRateLimit } from "@/lib/core/rate-limit";
 
 const schema = z.object({
@@ -57,7 +56,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     res.cookies.set("token", token, {
       httpOnly: true,
-      secure: getEnv().NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 30,
       path: "/",
