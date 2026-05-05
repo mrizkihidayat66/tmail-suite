@@ -11,7 +11,9 @@ async function getSessionUser() {
       where: { token },
       include: { user: { select: { id: true, isActive: true, mustChangePassword: true } } },
     });
-    return session?.user.isActive ? session.user : null;
+    if (!session || !session.user.isActive) return null;
+    if (session.expiresAt < new Date()) return null;
+    return session.user;
   } catch {
     return null;
   }

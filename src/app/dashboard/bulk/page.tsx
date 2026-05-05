@@ -53,6 +53,9 @@ export default function BulkGeneratePage() {
       if (d.error) { toast.error(d.error); return; }
       setCreated(d.accounts ?? []);
       qc.invalidateQueries({ queryKey: ["accounts"] });
+      if (d.failures?.length > 0) {
+        toast.error(`${d.failures.length} account(s) failed to create`);
+      }
       toast.success(`Created ${d.count} accounts`);
     },
     onError: () => toast.error("Failed to generate accounts"),

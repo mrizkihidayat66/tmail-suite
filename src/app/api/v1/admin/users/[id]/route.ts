@@ -4,10 +4,11 @@ import bcrypt from "bcryptjs";
 import { withAuth, RouteContext } from "@/lib/core/middleware";
 import { ok, noContent, handleError } from "@/lib/core/response";
 import { db } from "@/lib/core/db";
-import { NotFoundError, ForbiddenError } from "@/lib/core/errors";
+import { NotFoundError, ForbiddenError, AppError } from "@/lib/core/errors";
 
 const updateSchema = z.object({
   displayName: z.string().nullable().optional(),
+  currentPassword: z.string().optional(),
   password: z.string().min(8).optional(),
   isActive: z.boolean().optional(),
 });
@@ -21,6 +22,14 @@ export const PATCH = withAuth(async (req: NextRequest, session, ctx: RouteContex
 
     if (body.isActive === false && ctx.params.id === session.sub) {
       throw new ForbiddenError("Cannot deactivate your own account");
+    }
+
+    if (body.password) {
+      if (!body.currentPassword) {
+        throw new AppError("Current password is required to set a new password", 400, "CURRENT_PASSWORD_REQUIRED");
+      }
+      const valid = await bcrypt.compare(body.currentPassword, user.passwordHash);
+      if (!valid) throw new AppError("Current password is incorrect", 400, "INVALID_CURRENT_PASSWORD");
     }
 
     const data: Record<string, unknown> = {};

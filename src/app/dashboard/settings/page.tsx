@@ -81,25 +81,22 @@ export default function SettingsPage() {
     mutationFn: async () => {
       if (pwForm.next !== pwForm.confirm) throw new Error("Passwords do not match");
       if (pwForm.next.length < 8) throw new Error("Password must be at least 8 characters");
-      const verifyRes = await fetch("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: me?.username, password: pwForm.current }),
-      });
-      if (!verifyRes.ok) throw new Error("Current password is incorrect");
       const res = await fetch(`/api/v1/admin/users/${me?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pwForm.next }),
+        body: JSON.stringify({ currentPassword: pwForm.current, password: pwForm.next }),
       });
       const d = await res.json();
-      if (d.error) throw new Error(d.error);
+      if (!res.ok) throw new Error(d.error ?? "Failed to change password");
       return d;
     },
     onSuccess: () => {
       toast.success("Password changed successfully");
       setPwForm({ current: "", next: "", confirm: "" });
       refetchMe();
+      if (searchParams.get("reason") === "must_change") {
+        window.location.href = "/dashboard";
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });

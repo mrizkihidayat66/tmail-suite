@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Mail } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,11 +21,10 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Login failed");
       if (data.mustChangePassword) {
-        router.push("/dashboard/settings?tab=account&reason=must_change");
+        window.location.href = "/dashboard/settings?tab=account&reason=must_change";
       } else {
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }
-      router.refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Login failed");
     } finally {

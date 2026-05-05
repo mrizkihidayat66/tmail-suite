@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Zap, Key, ScrollText, Settings, LogOut, Mail,
 } from "lucide-react";
@@ -22,12 +22,10 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   async function handleLogout() {
     await fetch("/api/v1/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   }
 
   return (
