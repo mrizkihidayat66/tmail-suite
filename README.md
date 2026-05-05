@@ -112,7 +112,42 @@ docker compose up -d --build
 
 ---
 
-### Option C — Local development
+### Option C — Portainer (inline environment)
+
+For deployment via Portainer or any environment that does not use a `.env` file. In Portainer: **Stacks → Add stack → Web editor** → paste the YAML below, adjust `APP_URL` and port to match your setup.
+
+```yaml
+services:
+  app:
+    image: ghcr.io/mrizkihidayat66/tmail-suite:latest
+    container_name: tmail-suite
+    restart: unless-stopped
+    ports:
+      - "8027:8027"
+    volumes:
+      - data:/root/.tmail-suite
+    environment:
+      PORT: 8027
+      NODE_ENV: production
+      DATABASE_URL: "file:/root/.tmail-suite/db/tmail.db"
+      ATTACHMENTS_DIR: "/root/.tmail-suite/attachments"
+      APP_URL: "http://localhost:8027"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8027/api/v1/domains"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  data:
+```
+
+> Replace `8027` with your preferred port. `APP_URL` must match the URL you use to access the panel — use your server's IP or domain if accessing from another machine (e.g. `http://192.168.1.10:8027`).
+
+---
+
+### Option D — Local development
 
 ```bash
 git clone https://github.com/mrizkihidayat66/tmail-suite.git
