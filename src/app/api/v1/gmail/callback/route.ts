@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { exchangeCodeForTokens, createOAuth2Client } from "@/lib/features/gmail/client";
 import { db } from "@/lib/core/db";
-import { getEnv } from "@/config/env";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
-  const error = searchParams.get("error");
-  const stateParam = searchParams.get("state");
-  const base = getEnv().APP_URL;
+  const reqUrl = new URL(req.url);
+  const hostHeader = req.headers.get("host");
+  const base = hostHeader
+    ? `${reqUrl.protocol}//${hostHeader}`
+    : reqUrl.origin;
+
+  const code = reqUrl.searchParams.get("code");
+  const error = reqUrl.searchParams.get("error");
+  const stateParam = reqUrl.searchParams.get("state");
 
   if (error) {
     return NextResponse.redirect(`${base}/dashboard/settings?gmail_error=${encodeURIComponent(error)}`);

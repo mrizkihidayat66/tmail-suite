@@ -4,11 +4,26 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Globe, Settings2, Eye, EyeOff, KeyRound, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Globe, Settings2, Eye, EyeOff, KeyRound, AlertTriangle, Terminal, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/shared/utils";
 import type { MeResponse, HealthStatus, AdminUserRow, GmailStatus, DomainRow } from "@/types";
 
 type Tab = "account" | "system" | "users" | "gmail" | "domains" | "config";
+
+function extractPrivateIpInfo(uri: string): { ip: string; port: string } | null {
+  try {
+    const url = new URL(uri);
+    const host = url.hostname;
+    const port = url.port || (url.protocol === "https:" ? "443" : "80");
+    const isPrivate =
+      /^10\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      /^192\.168\./.test(host);
+    return isPrivate ? { ip: host, port } : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function SettingsPage() {
   const qc = useQueryClient();
@@ -32,6 +47,14 @@ export default function SettingsPage() {
     gmail_poll_interval: "",
   });
   const [showSecret, setShowSecret] = useState(false);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
+  const [osTab, setOsTab] = useState<"windows" | "linux-socat" | "linux-ssh" | "macos">("windows");
+
+  function copyCmd(text: string, key: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedCmd(key);
+    setTimeout(() => setCopiedCmd(null), 2000);
+  }
 
   useEffect(() => {
     const t = searchParams.get("tab") as Tab | null;
@@ -491,6 +514,100 @@ export default function SettingsPage() {
                   {configs[key] && key !== "google_client_secret" && (
                     <p className="text-xs text-gray-400 mt-0.5">Current: {String(configs[key])}</p>
                   )}
+                  {key === "google_redirect_uri" && (() => {
+                    const uriToCheck = configForm.google_redirect_uri || (configs.google_redirect_uri ? String(configs.google_redirect_uri) : "");
+                    const privateInfo = extractPrivateIpInfo(uriToCheck);
+                    if (!privateInfo) return null;
+                    const { ip, port } = privateInfo;
+                    const localhostUri = uriToCheck.replace(ip, "localhost");
+
+                    const OS_TABS = [
+                      { key: "windows", label: "Windows" },
+                      { key: "linux-socat", label: "Linux (socat)" },
+                      { key: "linux-ssh", label: "Linux (ssh)" },
+                      { key: "macos", label: "macOS" },
+                    ] as const;
+
+                    const cmds: Record<string, { note?: string; add: string; remove: string }> = {
+                      windows: {
+                        note: "Run as Administrator in Command Prompt or PowerShell.",
+                        add: `netsh interface portproxy add v4tov4 listenaddress=127.0.0.1 listenport=${port} connectaddress=${ip} connectport=${port}`,
+                        remove: `netsh interface portproxy delete v4tov4 listenaddress=127.0.0.1 listenport=${port}`,
+                      },
+                      "linux-socat": {
+                        note: "Requires socat — install with: sudo apt install socat  (Debian/Ubuntu) or  sudo yum install socat  (RHEL/CentOS).",
+                        add: `socat TCP-LISTEN:${port},fork TCP:${ip}:${port} &`,
+                        remove: `pkill -f "socat TCP-LISTEN:${port}"`,
+                      },
+                      "linux-ssh": {
+                        note: "Uses SSH local port forwarding — no extra install needed. Requires SSH access to the server.",
+                        add: `ssh -L ${port}:${ip}:${port} user@${ip} -N &`,
+                        remove: `pkill -f "ssh -L ${port}"`,
+                      },
+                      macos: {
+                        note: "Requires socat — install with: brew install socat",
+                        add: `socat TCP-LISTEN:${port},fork TCP:${ip}:${port} &`,
+                        remove: `pkill -f "socat TCP-LISTEN:${port}"`,
+                      },
+                    };
+
+                    const current = cmds[osTab];
+
+                    return (
+                      <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <p className="text-xs text-amber-800">
+                            Google OAuth does not allow private IP addresses as redirect URIs. Use a public domain, or temporarily forward <code className="bg-amber-100 px-1 rounded">{ip}:{port}</code> to <code className="bg-amber-100 px-1 rounded">localhost:{port}</code> and register <code className="bg-amber-100 px-1 rounded">{localhostUri}</code> in Google Cloud Console instead.
+                          </p>
+                        </div>
+
+                        <div className="flex gap-1 border-b border-amber-200">
+                          {OS_TABS.map((t) => (
+                            <button
+                              key={t.key}
+                              type="button"
+                              onClick={() => setOsTab(t.key)}
+                              className={cn(
+                                "px-2.5 py-1 text-xs font-medium border-b-2 -mb-px transition-colors",
+                                osTab === t.key
+                                  ? "border-amber-600 text-amber-800"
+                                  : "border-transparent text-amber-600 hover:text-amber-800"
+                              )}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {current.note && (
+                            <p className="text-xs text-amber-700 italic">{current.note}</p>
+                          )}
+                          <p className="text-xs font-medium text-amber-800 flex items-center gap-1.5">
+                            <Terminal className="w-3.5 h-3.5" />
+                            Enable port forward:
+                          </p>
+                          <div className="flex items-center gap-2 bg-gray-900 rounded px-3 py-2">
+                            <code className="text-xs text-green-400 flex-1 break-all">{current.add}</code>
+                            <button type="button" onClick={() => copyCmd(current.add, "add")} className="flex-shrink-0 text-gray-400 hover:text-white transition-colors">
+                              {copiedCmd === "add" ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                          <p className="text-xs font-medium text-amber-800 flex items-center gap-1.5">
+                            <Terminal className="w-3.5 h-3.5" />
+                            Remove port forward when done:
+                          </p>
+                          <div className="flex items-center gap-2 bg-gray-900 rounded px-3 py-2">
+                            <code className="text-xs text-red-400 flex-1 break-all">{current.remove}</code>
+                            <button type="button" onClick={() => copyCmd(current.remove, "remove")} className="flex-shrink-0 text-gray-400 hover:text-white transition-colors">
+                              {copiedCmd === "remove" ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
