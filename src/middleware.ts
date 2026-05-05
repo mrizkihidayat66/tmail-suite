@@ -35,7 +35,6 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   }
 
   const res = NextResponse.next();
-  res.headers.set("x-pathname", pathname);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.headers.set(k, v);
   return res;
 }

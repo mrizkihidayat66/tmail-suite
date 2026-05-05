@@ -94,9 +94,7 @@ export default function SettingsPage() {
       toast.success("Password changed successfully");
       setPwForm({ current: "", next: "", confirm: "" });
       refetchMe();
-      if (searchParams.get("reason") === "must_change") {
-        window.location.href = "/dashboard";
-      }
+      qc.invalidateQueries({ queryKey: ["me"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });

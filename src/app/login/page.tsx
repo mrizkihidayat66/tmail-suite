@@ -20,11 +20,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Login failed");
-      if (data.mustChangePassword) {
-        window.location.href = "/dashboard/settings?tab=account&reason=must_change";
-      } else {
-        window.location.href = "/dashboard";
-      }
+      window.location.href = "/dashboard";
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Login failed");
     } finally {

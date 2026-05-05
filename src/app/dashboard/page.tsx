@@ -3,9 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Users, Mail, Key, Activity, RefreshCw } from "lucide-react";
+import { Users, Mail, Key, Activity, RefreshCw, AlertTriangle } from "lucide-react";
 import { formatRelative } from "@/lib/shared/utils";
-import type { SystemStats, EmailRow } from "@/types";
+import type { SystemStats, EmailRow, MeResponse } from "@/types";
 
 function StatCard({
   label,
@@ -39,6 +39,12 @@ function StatCard({
 
 export default function DashboardPage() {
   const qc = useQueryClient();
+
+  const { data: me } = useQuery<MeResponse>({
+    queryKey: ["me"],
+    queryFn: () => fetch("/api/v1/auth/me").then((r) => r.json()),
+  });
+
   const { data: stats } = useQuery<SystemStats>({
     queryKey: ["stats"],
     queryFn: () => fetch("/api/v1/admin/stats").then((r) => r.json()),
@@ -64,6 +70,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {me?.mustChangePassword && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-amber-800">
+            You are using the default password.{" "}
+            <Link href="/dashboard/settings?tab=account" className="font-medium underline hover:no-underline">
+              Change it now
+            </Link>
+            {" "}to secure your account.
+          </p>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
