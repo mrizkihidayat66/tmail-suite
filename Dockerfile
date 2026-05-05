@@ -22,13 +22,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts/bootstrap.js ./scripts/bootstrap.js
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME="0.0.0.0"
 ENV DATABASE_URL="file:/root/.tmail-suite/db/tmail.db"
 ENV ATTACHMENTS_DIR="/root/.tmail-suite/attachments"
 
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --skip-generate && node server.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --skip-generate && node scripts/bootstrap.js && node server.js"]
