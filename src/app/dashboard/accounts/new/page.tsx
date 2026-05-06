@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { ArrowLeft, RefreshCw, Eye, EyeOff, Copy, Check } from "lucide-react";
+import { copyToClipboard } from "@/lib/shared/utils";
 
 export default function NewAccountPage() {
   const router = useRouter();
@@ -33,9 +34,13 @@ export default function NewAccountPage() {
   }
 
   async function copy(text: string, key: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
+    } else {
+      toast.error("Failed to copy — please copy manually");
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {

@@ -47,7 +47,7 @@ export async function createAccount(input: CreateAccountInput) {
     ttlHours = 24,
     label,
     notes,
-    usernamePattern = "random_word",
+    usernamePattern = "random",
     domain: preferredDomain,
   } = input;
 
@@ -129,6 +129,7 @@ export async function bulkCreateAccounts(
     label?: string;
     usernamePattern?: UsernamePattern;
     passwordOptions?: PasswordOptions;
+    fixedPassword?: string;
     domain?: string;
   }
 ) {
@@ -137,11 +138,17 @@ export async function bulkCreateAccounts(
 
   for (let i = 0; i < count; i++) {
     try {
+      const customPassword = opts.fixedPassword
+        ? opts.fixedPassword
+        : opts.passwordOptions
+          ? generatePassword(opts.passwordOptions)
+          : undefined;
+
       const { account, plainPassword } = await createAccount({
         ttlHours: opts.ttlHours,
         label: opts.label,
         usernamePattern: opts.usernamePattern,
-        customPassword: opts.passwordOptions ? generatePassword(opts.passwordOptions) : undefined,
+        customPassword,
         domain: opts.domain,
       });
       results.push({ account, plainPassword });

@@ -15,9 +15,8 @@ const createSchema = z.object({
   notes: z.string().optional(),
   domain: z.string().optional(),
   usernamePattern: z.enum([
-    "random_word", "random_chars", "adjective_noun",
-    "indonesian", "chinese", "japanese", "english",
-  ]).default("random_word"),
+    "random", "en", "id", "zh", "ja",
+  ]).default("random"),
 });
 
 export const GET = withAuth(async (req: NextRequest, session): Promise<NextResponse> => {

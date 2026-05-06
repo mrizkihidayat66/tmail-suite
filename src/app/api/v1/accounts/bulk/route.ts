@@ -11,9 +11,9 @@ const schema = z.object({
   label: z.string().optional(),
   domain: z.string().optional(),
   usernamePattern: z.enum([
-    "random_word", "random_chars", "adjective_noun",
-    "indonesian", "chinese", "japanese", "english",
-  ]).default("random_word"),
+    "random", "en", "id", "zh", "ja",
+  ]).default("random"),
+  fixedPassword: z.string().min(8).optional(),
   passwordOptions: z.object({
     length: z.number().int().min(8).max(64).default(16),
     includeSymbols: z.boolean().default(true),
@@ -29,6 +29,7 @@ export const POST = withAuth(async (req: NextRequest, session): Promise<NextResp
       ttlHours: body.ttlHours,
       label: body.label,
       usernamePattern: body.usernamePattern,
+      fixedPassword: body.fixedPassword,
       passwordOptions: body.passwordOptions,
       domain: body.domain,
     });

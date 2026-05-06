@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Plus, Trash2, RotateCcw, Copy, Check, X } from "lucide-react";
-import { formatRelative, cn } from "@/lib/shared/utils";
-import { parseJsonSafe } from "@/lib/shared/utils";
+import { formatRelative, cn, copyToClipboard, parseJsonSafe } from "@/lib/shared/utils";
 
 const SCOPE_OPTIONS = [
   { value: "*", label: "Full Access" },
@@ -18,7 +17,7 @@ export default function ApiKeysPage() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [scopes, setScopes] = useState(["*"]);
@@ -54,11 +53,28 @@ export default function ApiKeysPage() {
     onSuccess: (d) => { qc.invalidateQueries({ queryKey: ["api-keys"] }); setNewKey(d.key); toast.success("Key rotated"); },
   });
 
-  async function copyKey() {
-    if (!newKey) return;
-    await navigator.clipboard.writeText(newKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function copyKey(text: string, id: string) {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    } else {
+      toast.error("Failed to copy — please copy manually");
+    }
+  }
+
+  async function revealAndCopy(id: string) {
+    try {
+      const res = await fetch(`/api/v1/api-keys/${id}/reveal`);
+      const d = await res.json();
+      if (!res.ok) {
+        toast.error(d.error ?? "Cannot reveal key");
+        return;
+      }
+      await copyKey(d.key, id);
+    } catch {
+      toast.error("Failed to reveal key");
+    }
   }
 
   function toggleScope(s: string) {
@@ -87,14 +103,14 @@ export default function ApiKeysPage() {
       {newKey && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4">
           <p className="text-sm font-medium text-green-800 mb-2">
-            New API key — copy it now, it won&apos;t be shown again
+            New API key — copy it now or use the copy button in the table anytime
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs font-mono bg-white border border-green-200 rounded px-3 py-2 text-green-900 break-all">
               {newKey}
             </code>
-            <button onClick={copyKey} className="p-2 bg-green-100 hover:bg-green-200 rounded-lg flex-shrink-0">
-              {copied ? <Check className="w-4 h-4 text-green-700" /> : <Copy className="w-4 h-4 text-green-700" />}
+            <button onClick={() => copyKey(newKey, "banner")} className="p-2 bg-green-100 hover:bg-green-200 rounded-lg flex-shrink-0">
+              {copied === "banner" ? <Check className="w-4 h-4 text-green-700" /> : <Copy className="w-4 h-4 text-green-700" />}
             </button>
             <button onClick={() => setNewKey(null)} className="p-2 hover:bg-green-100 rounded-lg flex-shrink-0">
               <X className="w-4 h-4 text-green-700" />
@@ -177,6 +193,13 @@ export default function ApiKeysPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={() => revealAndCopy(k.id)}
+                        className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
+                        title="Copy key"
+                      >
+                        {copied === k.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                      </button>
                       <button onClick={() => { if (confirm("Rotate this key? The old key will be invalidated.")) rotateMutation.mutate(k.id); }} className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="Rotate">
                         <RotateCcw className="w-4 h-4" />
                       </button>

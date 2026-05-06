@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { ArrowLeft, Copy, Check, RefreshCw, Trash2, RotateCcw, Search } from "lucide-react";
-import { formatRelative, formatDateTime, cn } from "@/lib/shared/utils";
+import { formatRelative, formatDateTime, cn, copyToClipboard } from "@/lib/shared/utils";
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,9 +55,13 @@ export default function AccountDetailPage() {
   });
 
   async function copy(text: string, key: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
+    } else {
+      toast.error("Failed to copy — please copy manually");
+    }
   }
 
   if (isLoading) return <div className="text-sm text-gray-400 p-8">Loading…</div>;

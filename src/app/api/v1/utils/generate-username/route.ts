@@ -6,9 +6,8 @@ import { generateUsername } from "@/lib/shared/generators";
 
 const schema = z.object({
   pattern: z.enum([
-    "random_word", "random_chars", "adjective_noun",
-    "indonesian", "chinese", "japanese", "english",
-  ]).default("random_word"),
+    "random", "en", "id", "zh", "ja",
+  ]).default("random"),
 });
 
 export const GET = withAuth(async (req: NextRequest): Promise<NextResponse> => {

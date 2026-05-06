@@ -1,6 +1,6 @@
 import { db } from "@/lib/core/db";
-import { NotFoundError } from "@/lib/core/errors";
-import { generateApiKey, hashApiKey } from "@/lib/shared/generators";
+import { NotFoundError, AppError } from "@/lib/core/errors";
+import { generateApiKey, hashApiKey, encryptApiKey, decryptApiKey } from "@/lib/shared/generators";
 import { ensureJwtSecret } from "@/lib/core/config";
 
 export async function createApiKey(input: {
@@ -13,6 +13,7 @@ export async function createApiKey(input: {
   const secret = await ensureJwtSecret();
   const { raw, prefix } = generateApiKey();
   const hash = hashApiKey(raw, secret);
+  const encrypted = encryptApiKey(raw, secret);
 
   const key = await db.apiKey.create({
     data: {
@@ -20,6 +21,7 @@ export async function createApiKey(input: {
       description: input.description,
       keyHash: hash,
       keyPrefix: prefix,
+      keyEncrypted: encrypted,
       scopes: JSON.stringify(input.scopes ?? ["*"]),
       expiresAt: input.expiresAt,
       createdById: input.createdById,
@@ -43,6 +45,15 @@ export async function verifyApiKey(rawKey: string) {
   });
 
   return key;
+}
+
+export async function revealApiKey(id: string): Promise<string> {
+  const key = await db.apiKey.findUnique({ where: { id } });
+  if (!key) throw new NotFoundError("API key");
+  if (!key.keyEncrypted) throw new AppError("Key was created before reveal support was added. Please rotate to get a new key.", 409, "KEY_NOT_REVEALABLE");
+
+  const secret = await ensureJwtSecret();
+  return decryptApiKey(key.keyEncrypted, secret);
 }
 
 export async function revokeApiKey(id: string): Promise<void> {

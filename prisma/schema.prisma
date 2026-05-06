@@ -143,9 +143,10 @@ model ApiKey {
   id          String    @id @default(uuid())
   name        String
   description String?
-  keyHash     String    @unique
-  keyPrefix   String
-  scopes      String    @default("[\"*\"]")
+  keyHash      String    @unique
+  keyPrefix    String
+  keyEncrypted String?
+  scopes       String    @default("[\"*\"]")
   expiresAt   DateTime?
   lastUsedAt  DateTime?
   usageCount  Int       @default(0)

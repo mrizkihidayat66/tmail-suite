@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Globe, Settings2, Eye, EyeOff, KeyRound, AlertTriangle, Terminal, Copy, Check } from "lucide-react";
-import { cn } from "@/lib/shared/utils";
+import { cn, copyToClipboard } from "@/lib/shared/utils";
 import type { MeResponse, HealthStatus, AdminUserRow, GmailStatus, DomainRow } from "@/types";
 
 type Tab = "account" | "system" | "users" | "gmail" | "domains" | "config";
@@ -48,12 +48,14 @@ export default function SettingsPage() {
   });
   const [showSecret, setShowSecret] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
-  const [osTab, setOsTab] = useState<"windows" | "linux-socat" | "linux-ssh" | "macos">("windows");
+  const [osTab, setOsTab] = useState<"windows" | "linux" | "macos">("windows");
 
-  function copyCmd(text: string, key: string) {
-    navigator.clipboard.writeText(text);
-    setCopiedCmd(key);
-    setTimeout(() => setCopiedCmd(null), 2000);
+  async function copyCmd(text: string, key: string) {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopiedCmd(key);
+      setTimeout(() => setCopiedCmd(null), 2000);
+    }
   }
 
   useEffect(() => {
@@ -523,8 +525,7 @@ export default function SettingsPage() {
 
                     const OS_TABS = [
                       { key: "windows", label: "Windows" },
-                      { key: "linux-socat", label: "Linux (socat)" },
-                      { key: "linux-ssh", label: "Linux (ssh)" },
+                      { key: "linux", label: "Linux" },
                       { key: "macos", label: "macOS" },
                     ] as const;
 
@@ -534,15 +535,10 @@ export default function SettingsPage() {
                         add: `netsh interface portproxy add v4tov4 listenaddress=127.0.0.1 listenport=${port} connectaddress=${ip} connectport=${port}`,
                         remove: `netsh interface portproxy delete v4tov4 listenaddress=127.0.0.1 listenport=${port}`,
                       },
-                      "linux-socat": {
+                      linux: {
                         note: "Requires socat — install with: sudo apt install socat  (Debian/Ubuntu) or  sudo yum install socat  (RHEL/CentOS).",
                         add: `socat TCP-LISTEN:${port},fork TCP:${ip}:${port} &`,
                         remove: `pkill -f "socat TCP-LISTEN:${port}"`,
-                      },
-                      "linux-ssh": {
-                        note: "Uses SSH local port forwarding — no extra install needed. Requires SSH access to the server.",
-                        add: `ssh -L ${port}:${ip}:${port} user@${ip} -N &`,
-                        remove: `pkill -f "ssh -L ${port}"`,
                       },
                       macos: {
                         note: "Requires socat — install with: brew install socat",

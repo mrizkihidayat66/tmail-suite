@@ -3,29 +3,33 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Zap, Download, Copy, Check } from "lucide-react";
+import { Zap, Download, Copy, Check, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { copyToClipboard } from "@/lib/shared/utils";
 
 const USERNAME_PATTERNS = [
-  { value: "random_word", label: "Random Word (EN)" },
-  { value: "english", label: "English" },
-  { value: "indonesian", label: "Indonesian" },
-  { value: "chinese", label: "Chinese (Pinyin)" },
-  { value: "japanese", label: "Japanese (Romaji)" },
-  { value: "adjective_noun", label: "Adjective + Noun" },
-  { value: "random_chars", label: "Random Chars" },
+  { value: "random", label: "Random (All)" },
+  { value: "en", label: "English" },
+  { value: "id", label: "Indonesian" },
+  { value: "zh", label: "Chinese" },
+  { value: "ja", label: "Japanese" },
 ];
 
 export default function BulkGeneratePage() {
   const qc = useQueryClient();
   const [count, setCount] = useState(5);
-  const [pattern, setPattern] = useState("random_word");
+  const [pattern, setPattern] = useState("random");
   const [ttlHours, setTtlHours] = useState(24);
   const [label, setLabel] = useState("");
   const [selectedDomain, setSelectedDomain] = useState("");
+
+  const [pwMode, setPwMode] = useState<"random" | "fixed">("random");
   const [pwLength, setPwLength] = useState(16);
   const [pwSymbols, setPwSymbols] = useState(true);
   const [pwNumbers, setPwNumbers] = useState(true);
   const [pwUppercase, setPwUppercase] = useState(true);
+  const [fixedPassword, setFixedPassword] = useState("");
+  const [showFixedPw, setShowFixedPw] = useState(false);
+
   const [created, setCreated] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -35,20 +39,32 @@ export default function BulkGeneratePage() {
   });
   const domains = domainsData?.domains ?? [];
 
+  async function genFixedPassword() {
+    const r = await fetch("/api/v1/utils/generate-password?count=1&length=16");
+    const d = await r.json();
+    setFixedPassword(d.passwords?.[0] ?? "");
+  }
+
   const mutation = useMutation({
-    mutationFn: () =>
-      fetch("/api/v1/accounts/bulk", {
+    mutationFn: () => {
+      const body: Record<string, unknown> = {
+        count,
+        ttlHours,
+        label: label || undefined,
+        domain: selectedDomain || undefined,
+        usernamePattern: pattern,
+      };
+      if (pwMode === "fixed") {
+        body.fixedPassword = fixedPassword;
+      } else {
+        body.passwordOptions = { length: pwLength, includeSymbols: pwSymbols, includeNumbers: pwNumbers, includeUppercase: pwUppercase };
+      }
+      return fetch("/api/v1/accounts/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          count,
-          ttlHours,
-          label: label || undefined,
-          domain: selectedDomain || undefined,
-          usernamePattern: pattern,
-          passwordOptions: { length: pwLength, includeSymbols: pwSymbols, includeNumbers: pwNumbers, includeUppercase: pwUppercase },
-        }),
-      }).then((r) => r.json()),
+        body: JSON.stringify(body),
+      }).then((r) => r.json());
+    },
     onSuccess: (d) => {
       if (d.error) { toast.error(d.error); return; }
       setCreated(d.accounts ?? []);
@@ -74,10 +90,16 @@ export default function BulkGeneratePage() {
   }
 
   async function copyAll() {
-    await navigator.clipboard.writeText(created.map((a) => `${a.email}:${a.password}`).join("\n"));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const ok = await copyToClipboard(created.map((a) => `${a.email}:${a.password}`).join("\n"));
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error("Failed to copy — please download instead");
+    }
   }
+
+  const canGenerate = pwMode === "random" || (pwMode === "fixed" && fixedPassword.length >= 8);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -127,26 +149,72 @@ export default function BulkGeneratePage() {
         </div>
 
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">Password Options</p>
-          <div className="flex flex-wrap gap-4">
-            {([["Symbols", pwSymbols, setPwSymbols], ["Numbers", pwNumbers, setPwNumbers], ["Uppercase", pwUppercase, setPwUppercase]] as const).map(
-              ([lbl, val, set]) => (
-                <label key={lbl} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input type="checkbox" checked={val} onChange={(e) => (set as any)(e.target.checked)} className="rounded" />
-                  {lbl}
-                </label>
-              )
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Length:</span>
-              <input type="number" min={8} max={64} value={pwLength} onChange={(e) => setPwLength(Number(e.target.value))} className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
+          <p className="text-sm font-medium text-gray-700 mb-2">Password</p>
+          <div className="flex gap-2 mb-3">
+            {(["random", "fixed"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setPwMode(mode)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  pwMode === mode
+                    ? "bg-blue-100 text-blue-700 border-blue-200"
+                    : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                }`}
+              >
+                {mode === "random" ? "Random" : "Fixed (same for all)"}
+              </button>
+            ))}
           </div>
+
+          {pwMode === "random" ? (
+            <div className="flex flex-wrap gap-4">
+              {([["Symbols", pwSymbols, setPwSymbols], ["Numbers", pwNumbers, setPwNumbers], ["Uppercase", pwUppercase, setPwUppercase]] as const).map(
+                ([lbl, val, set]) => (
+                  <label key={lbl} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" checked={val} onChange={(e) => (set as any)(e.target.checked)} className="rounded" />
+                    {lbl}
+                  </label>
+                )
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Length:</span>
+                <input type="number" min={8} max={64} value={pwLength} onChange={(e) => setPwLength(Number(e.target.value))} className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showFixedPw ? "text" : "password"}
+                  value={fixedPassword}
+                  onChange={(e) => setFixedPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowFixedPw(!showFixedPw)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showFixedPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={genFixedPassword}
+                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                title="Generate password"
+              >
+                <RefreshCw className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          )}
         </div>
 
         <button
           onClick={() => mutation.mutate()}
-          disabled={mutation.isPending}
+          disabled={mutation.isPending || !canGenerate}
           className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Zap className="w-4 h-4" />
