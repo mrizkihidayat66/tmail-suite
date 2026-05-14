@@ -69,9 +69,9 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div id="dashboard-page" className="space-y-6 max-w-5xl">
       {me?.mustChangePassword && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+        <div id="password-warning" className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm">
           <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <p className="text-amber-800">
             You are using the default password.{" "}
@@ -84,10 +84,11 @@ export default function DashboardPage() {
       )}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <h1 id="dashboard-title" className="text-xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">System overview</p>
         </div>
         <button
+          id="sync-all-button"
           onClick={() => syncMutation.mutate()}
           disabled={syncMutation.isPending}
           className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-60 text-gray-600 transition-colors"
@@ -97,7 +98,7 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="stats-cards" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Accounts" value={stats?.totalAccounts} icon={Users} color="blue" />
         <StatCard label="Active Accounts" value={stats?.activeAccounts} icon={Activity} color="green" />
         <StatCard label="Emails (24h)" value={stats?.emailsLast24h} icon={Mail} color="purple" />
@@ -105,14 +106,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div id="recent-emails-card" className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">Recent Emails</h2>
             <Link href="/dashboard/accounts" className="text-xs text-blue-600 hover:underline">
               View all
             </Link>
           </div>
-          <div className="space-y-3">
+          <div id="recent-emails-list" className="space-y-3">
             {!recentData?.emails?.length && (
               <p className="text-sm text-gray-400 text-center py-4">No emails yet</p>
             )}
@@ -136,9 +137,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div id="system-status-card" className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="font-semibold text-gray-900 mb-4">System Status</h2>
-          <div className="space-y-3 text-sm">
+          <div id="system-status-list" className="space-y-3 text-sm">
             <div className="flex justify-between py-2 border-b border-gray-100">
               <span className="text-gray-600">Gmail</span>
               <span
@@ -162,12 +163,14 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
             <Link
+              id="new-account-link"
               href="/dashboard/accounts/new"
               className="flex-1 text-center text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
             >
               New Account
             </Link>
             <Link
+              id="bulk-generate-link"
               href="/dashboard/bulk"
               className="flex-1 text-center text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-medium transition-colors"
             >

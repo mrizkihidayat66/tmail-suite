@@ -132,29 +132,32 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="space-y-5 max-w-6xl">
+    <div id="accounts-page" className="space-y-5 max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Accounts</h1>
+          <h1 id="accounts-title" className="text-xl font-bold text-gray-900">Accounts</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} total</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/dashboard/bulk" className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+          <Link id="bulk-link" href="/dashboard/bulk" className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
             <Zap className="w-4 h-4" />Bulk
           </Link>
-          <Link href="/dashboard/accounts/new" className="flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+          <Link id="new-account-button" href="/dashboard/accounts/new" className="flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
             <Plus className="w-4 h-4" />New Account
           </Link>
         </div>
       </div>
 
       <form
+        id="search-form"
         onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); setSelected(new Set()); }}
         className="flex gap-2"
       >
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
+            id="search-input"
+            name="search"
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -162,37 +165,39 @@ export default function AccountsPage() {
             className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <button type="submit" className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
+        <button id="search-submit" type="submit" className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
           Search
         </button>
       </form>
 
       {selected.size > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl flex-wrap">
+        <div id="bulk-actions-bar" className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl flex-wrap">
           <span className="text-sm font-medium text-blue-800">{selected.size} selected</span>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setShowBulkLabel(!showBulkLabel)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
+            <button id="bulk-set-label-button" onClick={() => setShowBulkLabel(!showBulkLabel)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
               <Tag className="w-3.5 h-3.5" />Set Label
             </button>
-            <button onClick={() => setShowBulkTtl(!showBulkTtl)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
+            <button id="bulk-extend-ttl-button" onClick={() => setShowBulkTtl(!showBulkTtl)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
               <Clock className="w-3.5 h-3.5" />Extend TTL
             </button>
-            <button onClick={() => exportSelected("csv")} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
+            <button id="bulk-export-csv-button" onClick={() => exportSelected("csv")} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
               <Download className="w-3.5 h-3.5" />CSV
             </button>
-            <button onClick={() => exportSelected("json")} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
+            <button id="bulk-export-json-button" onClick={() => exportSelected("json")} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
               <Download className="w-3.5 h-3.5" />JSON
             </button>
-            <button onClick={bulkDelete} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100">
+            <button id="bulk-delete-button" onClick={bulkDelete} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100">
               <Trash2 className="w-3.5 h-3.5" />Delete
             </button>
-            <button onClick={() => setSelected(new Set())} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">
+            <button id="bulk-clear-selection" onClick={() => setSelected(new Set())} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">
               Clear
             </button>
           </div>
           {showBulkLabel && (
             <div className="flex items-center gap-2 w-full mt-1">
               <input
+                id="bulk-label-input"
+                name="bulkLabel"
                 type="text"
                 value={bulkLabel}
                 onChange={(e) => setBulkLabel(e.target.value)}

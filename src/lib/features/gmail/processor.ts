@@ -3,6 +3,7 @@ import fs from "fs";
 import { db } from "@/lib/core/db";
 import { listNewMessages, fetchMessage, fetchAttachment } from "./client";
 import { parseMessage } from "./parser";
+import { logger } from "@/lib/core/logger";
 
 const ATTACHMENTS_DIR =
   process.env.ATTACHMENTS_DIR ?? path.join(process.cwd(), "db", "attachments");
@@ -90,14 +91,14 @@ async function processMessage(messageId: string): Promise<"processed" | "skipped
             const safeName = att.filename.replace(/[^\w\-. ]/g, "_").replace(/\.{2,}/g, "_").slice(0, 200);
             const filePath = path.resolve(dir, safeName);
             if (!filePath.startsWith(path.resolve(dir))) {
-              console.error(`[processor] path traversal attempt blocked: ${att.filename}`);
+              logger.warn('Path traversal attempt blocked', { filename: att.filename });
             } else {
               fs.writeFileSync(filePath, data);
               storagePath = path.join(email.id, safeName);
             }
           }
         } catch (e) {
-          console.error(`[processor] attachment download failed: ${att.filename}`, e);
+          logger.error('Attachment download failed', e instanceof Error ? e : undefined, { filename: att.filename });
         }
       }
 

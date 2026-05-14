@@ -4,6 +4,7 @@ import { pollAndProcess, deactivateExpiredAccounts } from "./processor";
 import { isGmailConnected } from "./client";
 import { reconcileEmailCounts } from "@/lib/features/emails/service";
 import { deleteExpiredSessions } from "@/lib/core/auth";
+import { logger } from "@/lib/core/logger";
 
 let pollTask: cron.ScheduledTask | null = null;
 let cleanupTask: cron.ScheduledTask | null = null;
@@ -31,14 +32,16 @@ export async function startScheduler(): Promise<void> {
       if (!connected) return;
       const result = await pollAndProcess();
       if (result.processed > 0 || result.errors > 0) {
-        console.log(
-          `[scheduler] poll: +${result.processed} stored, ${result.skipped} skipped, ${result.errors} errors`
-        );
+        logger.info('Gmail poll completed', {
+          processed: result.processed,
+          skipped: result.skipped,
+          errors: result.errors,
+        });
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg !== "GMAIL_NOT_CONNECTED") {
-        console.error("[scheduler] poll error:", msg);
+        logger.error('Gmail poll error', e instanceof Error ? e : undefined, { message: msg });
       }
     }
   });
@@ -46,24 +49,24 @@ export async function startScheduler(): Promise<void> {
   cleanupTask = cron.schedule("0 * * * *", async () => {
     try {
       const count = await deactivateExpiredAccounts();
-      if (count > 0) console.log(`[scheduler] cleanup: deactivated ${count} expired accounts`);
+      if (count > 0) logger.info('Cleanup: deactivated expired accounts', { count });
       const sessions = await deleteExpiredSessions();
-      if (sessions > 0) console.log(`[scheduler] cleanup: deleted ${sessions} expired sessions`);
+      if (sessions > 0) logger.info('Cleanup: deleted expired sessions', { count: sessions });
     } catch (e) {
-      console.error("[scheduler] cleanup error:", e);
+      logger.error('Cleanup error', e instanceof Error ? e : undefined);
     }
   });
 
   reconcileTask = cron.schedule("0 3 * * *", async () => {
     try {
       const fixed = await reconcileEmailCounts();
-      if (fixed > 0) console.log(`[scheduler] reconcile: fixed emailCount for ${fixed} accounts`);
+      if (fixed > 0) logger.info('Reconcile: fixed email counts', { accountsFixed: fixed });
     } catch (e) {
-      console.error("[scheduler] reconcile error:", e);
+      logger.error('Reconcile error', e instanceof Error ? e : undefined);
     }
   });
 
-  console.log(`[scheduler] started — poll every ${interval}s, cleanup every 1h`);
+  logger.info('Scheduler started', { pollIntervalSeconds: interval, cleanupInterval: '1h' });
 }
 
 export function stopScheduler(): void {

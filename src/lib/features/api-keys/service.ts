@@ -1,7 +1,54 @@
 import { db } from "@/lib/core/db";
-import { NotFoundError, AppError } from "@/lib/core/errors";
+import { NotFoundError, AppError, ForbiddenError } from "@/lib/core/errors";
 import { generateApiKey, hashApiKey, encryptApiKey, decryptApiKey } from "@/lib/shared/generators";
 import { ensureJwtSecret } from "@/lib/core/config";
+
+/**
+ * Validate if API key has required scopes
+ * @param requiredScopes - Array of required scopes (e.g., ["accounts:read", "emails:*"])
+ * @param keyScopes - Array of scopes assigned to the API key
+ * @returns true if key has all required scopes, false otherwise
+ */
+export function validateScopes(requiredScopes: string[], keyScopes: string[]): boolean {
+  // Wildcard scope grants all permissions
+  if (keyScopes.includes("*")) {
+    return true;
+  }
+
+  // Check each required scope
+  for (const required of requiredScopes) {
+    const [requiredResource, requiredAction] = required.split(":");
+    
+    let hasScope = false;
+    for (const keyScope of keyScopes) {
+      const [keyResource, keyAction] = keyScope.split(":");
+      
+      // Exact match
+      if (keyScope === required) {
+        hasScope = true;
+        break;
+      }
+      
+      // Wildcard action (e.g., "accounts:*" matches "accounts:read")
+      if (keyResource === requiredResource && keyAction === "*") {
+        hasScope = true;
+        break;
+      }
+      
+      // Wildcard resource (e.g., "*:read" matches "accounts:read")
+      if (keyResource === "*" && keyAction === requiredAction) {
+        hasScope = true;
+        break;
+      }
+    }
+    
+    if (!hasScope) {
+      return false;
+    }
+  }
+  
+  return true;
+}
 
 export async function createApiKey(input: {
   name: string;
@@ -36,8 +83,22 @@ export async function verifyApiKey(rawKey: string) {
   const hash = hashApiKey(rawKey, secret);
 
   const key = await db.apiKey.findUnique({ where: { keyHash: hash } });
-  if (!key || !key.isActive || key.revokedAt) return null;
-  if (key.expiresAt && key.expiresAt < new Date()) return null;
+  
+  if (!key) {
+    return null;
+  }
+  
+  if (!key.isActive) {
+    return null;
+  }
+  
+  if (key.revokedAt) {
+    return null;
+  }
+  
+  if (key.expiresAt && key.expiresAt < new Date()) {
+    return null;
+  }
 
   await db.apiKey.update({
     where: { id: key.id },

@@ -8,8 +8,8 @@ import { ConflictError } from "@/lib/core/errors";
 
 const createSchema = z.object({
   username: z.string().min(3).max(50),
-  password: z.string().min(8),
-  displayName: z.string().optional(),
+  password: z.string().min(8).max(128, "Password too long"),
+  displayName: z.string().max(200, "Display name too long").optional(),
 });
 
 export const GET = withAuth(async (_req: NextRequest): Promise<NextResponse> => {
@@ -22,7 +22,7 @@ export const GET = withAuth(async (_req: NextRequest): Promise<NextResponse> => 
   } catch (e) {
     return handleError(e);
   }
-});
+}, { requiredScopes: ["admin:*"] });
 
 export const POST = withAuth(async (req: NextRequest): Promise<NextResponse> => {
   try {
@@ -43,4 +43,4 @@ export const POST = withAuth(async (req: NextRequest): Promise<NextResponse> => 
   } catch (e) {
     return handleError(e);
   }
-});
+}, { requiredScopes: ["admin:*"] });

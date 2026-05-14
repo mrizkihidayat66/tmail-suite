@@ -29,20 +29,21 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   }
 
   return (
-    <nav className="flex flex-col h-full bg-white border-r border-gray-200">
-      <div className="h-16 flex items-center gap-2.5 px-5 border-b border-gray-200 flex-shrink-0">
+    <nav id="sidebar" className="flex flex-col h-full bg-white border-r border-gray-200">
+      <div id="sidebar-header" className="h-16 flex items-center gap-2.5 px-5 border-b border-gray-200 flex-shrink-0">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
           <Mail className="w-4 h-4 text-white" />
         </div>
         <span className="font-semibold text-gray-900 truncate">Tmail Suite</span>
       </div>
 
-      <div className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+      <div id="sidebar-nav" className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
+              id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               href={item.href}
               onClick={onNavigate}
               className={cn(
@@ -59,8 +60,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         })}
       </div>
 
-      <div className="p-3 border-t border-gray-200 flex-shrink-0">
+      <div id="sidebar-footer" className="p-3 border-t border-gray-200 flex-shrink-0">
         <button
+          id="logout-button"
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full transition-colors"
         >

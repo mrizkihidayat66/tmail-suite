@@ -7,9 +7,9 @@ import { db } from "@/lib/core/db";
 import { NotFoundError, ForbiddenError, AppError } from "@/lib/core/errors";
 
 const updateSchema = z.object({
-  displayName: z.string().nullable().optional(),
-  currentPassword: z.string().optional(),
-  password: z.string().min(8).optional(),
+  displayName: z.string().max(200, "Display name too long").nullable().optional(),
+  currentPassword: z.string().max(128, "Password too long").optional(),
+  password: z.string().min(8).max(128, "Password too long").optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -50,7 +50,7 @@ export const PATCH = withAuth(async (req: NextRequest, session, ctx: RouteContex
   } catch (e) {
     return handleError(e);
   }
-});
+}, { requiredScopes: ["admin:*"] });
 
 export const DELETE = withAuth(async (_req: NextRequest, session, ctx: RouteContext<{ id: string }>): Promise<NextResponse> => {
   try {
@@ -64,4 +64,4 @@ export const DELETE = withAuth(async (_req: NextRequest, session, ctx: RouteCont
   } catch (e) {
     return handleError(e);
   }
-});
+}, { requiredScopes: ["admin:*"] });

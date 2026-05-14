@@ -171,8 +171,15 @@ export async function reconcileEmailCounts(): Promise<number> {
   return fixed;
 }
 
-export async function getRecentEmails(limit = 20) {
+export async function getRecentEmails(userId: string, limit = 20) {
+  // Admin can see all emails from all active accounts
   const emails = await db.email.findMany({
+    where: {
+      account: {
+        deletedAt: null,
+        isActive: true,
+      },
+    },
     orderBy: { receivedAt: "desc" },
     take: limit,
     select: {

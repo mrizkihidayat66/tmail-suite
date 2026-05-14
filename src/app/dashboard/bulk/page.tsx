@@ -102,29 +102,29 @@ export default function BulkGeneratePage() {
   const canGenerate = pwMode === "random" || (pwMode === "fixed" && fixedPassword.length >= 8);
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div id="bulk-generate-page" className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Bulk Generate</h1>
+        <h1 id="bulk-generate-title" className="text-xl font-bold text-gray-900">Bulk Generate</h1>
         <p className="text-sm text-gray-500 mt-0.5">Create multiple accounts at once</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+      <div id="bulk-generate-form" className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Count</label>
-            <input type="number" min={1} max={100} value={count} onChange={(e) => setCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label htmlFor="bulk-count-input" className="block text-sm font-medium text-gray-700 mb-1.5">Count</label>
+            <input id="bulk-count-input" name="count" type="number" min={1} max={100} value={count} onChange={(e) => setCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Username Style</label>
-            <select value={pattern} onChange={(e) => setPattern(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label htmlFor="bulk-pattern-select" className="block text-sm font-medium text-gray-700 mb-1.5">Username Style</label>
+            <select id="bulk-pattern-select" name="pattern" value={pattern} onChange={(e) => setPattern(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               {USERNAME_PATTERNS.map((p) => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">TTL</label>
-            <select value={ttlHours} onChange={(e) => setTtlHours(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label htmlFor="bulk-ttl-select" className="block text-sm font-medium text-gray-700 mb-1.5">TTL</label>
+            <select id="bulk-ttl-select" name="ttl" value={ttlHours} onChange={(e) => setTtlHours(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value={1}>1 hour</option>
               <option value={6}>6 hours</option>
               <option value={24}>24 hours</option>
@@ -134,8 +134,8 @@ export default function BulkGeneratePage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Domain</label>
-            <select value={selectedDomain} onChange={(e) => setSelectedDomain(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label htmlFor="bulk-domain-select" className="block text-sm font-medium text-gray-700 mb-1.5">Domain</label>
+            <select id="bulk-domain-select" name="domain" value={selectedDomain} onChange={(e) => setSelectedDomain(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Random (any active domain)</option>
               {domains.map((d) => (
                 <option key={d.id} value={d.domain}>{d.domain}</option>
@@ -143,8 +143,8 @@ export default function BulkGeneratePage() {
             </select>
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Label</label>
-            <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. batch-jan" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label htmlFor="bulk-label-input" className="block text-sm font-medium text-gray-700 mb-1.5">Label</label>
+            <input id="bulk-label-input" name="label" type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. batch-jan" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
 
