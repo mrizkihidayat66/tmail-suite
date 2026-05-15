@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/api/v1/gmail/callback",
   "/api/v1/domains",
   "/api/openapi",
+  "/api/docs/assets",
 ];
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -38,7 +39,11 @@ function hasAuthCredentials(req: NextRequest): boolean {
 export async function middleware(req: NextRequest): Promise<NextResponse> {
   const { pathname } = req.nextUrl;
 
-  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "?"));
+  const isPublic = PUBLIC_PATHS.some((p) => 
+    pathname === p || 
+    pathname.startsWith(p + "/") || 
+    pathname.startsWith(p + "?")
+  );
   if (isPublic) {
     const res = NextResponse.next();
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.headers.set(k, v);

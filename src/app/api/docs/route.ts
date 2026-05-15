@@ -2,43 +2,19 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const html = `<!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
+    <title>TMail Suite API Documentation</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="TMail Suite API Documentation - Interactive API reference with testing capabilities" />
-    <title>TMail Suite API Documentation</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-      }
-    </style>
   </head>
   <body>
     <script
       id="api-reference"
       data-url="/api/openapi"
-      data-configuration='{
-        "theme": "default",
-        "layout": "modern",
-        "defaultHttpClient": {
-          "targetKey": "javascript",
-          "clientKey": "fetch"
-        },
-        "authentication": {
-          "preferredSecurityScheme": "bearerAuth",
-          "http": {
-            "bearer": {
-              "token": ""
-            }
-          }
-        },
-        "hiddenClients": [],
-        "darkMode": true
-      }'
+      data-configuration='{"theme":"purple","layout":"modern","defaultOpenAllTags":true}'
     ></script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.25.97"></script>
+    <script src="/api/docs/assets/browser/standalone.js"></script>
   </body>
 </html>`;
 
@@ -49,3 +25,4 @@ export async function GET() {
     },
   });
 }
+
