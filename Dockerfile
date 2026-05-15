@@ -12,6 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
 RUN npx prisma generate
+RUN node scripts/generate-openapi.js
 RUN npm run build
 
 FROM base AS runner

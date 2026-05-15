@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "node scripts/generate-openapi.js",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "generate-openapi": "node scripts/generate-openapi.js",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",

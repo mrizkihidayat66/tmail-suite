@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Users, Zap, Key, ScrollText, Settings, LogOut, Mail,
+  LayoutDashboard, Users, Zap, Key, ScrollText, Settings, LogOut, Mail, ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/shared/utils";
 
@@ -60,7 +60,17 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         })}
       </div>
 
-      <div id="sidebar-footer" className="p-3 border-t border-gray-200 flex-shrink-0">
+      <div id="sidebar-footer" className="p-3 border-t border-gray-200 flex-shrink-0 space-y-0.5">
+        <a
+          id="nav-api-docs"
+          href="/api/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 w-full transition-colors"
+        >
+          <ExternalLink className="w-4 h-4 flex-shrink-0" />
+          API Documentation
+        </a>
         <button
           id="logout-button"
           onClick={handleLogout}

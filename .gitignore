@@ -6,6 +6,7 @@ node_modules/
 .swc/
 out/
 dist/
+public/openapi.json
 
 # Environment
 .env
