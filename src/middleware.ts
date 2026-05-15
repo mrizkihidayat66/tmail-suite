@@ -5,6 +5,7 @@ const PUBLIC_PATHS = [
   "/api/v1/auth/login",
   "/api/v1/gmail/callback",
   "/api/v1/domains",
+  "/api/openapi",
 ];
 
 const SECURITY_HEADERS: Record<string, string> = {
