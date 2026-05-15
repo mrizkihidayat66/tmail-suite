@@ -113,7 +113,15 @@ SESSION_COOKIE_NAME="token"
 
 ### Interactive Documentation
 
-**Swagger UI:** http://localhost:3000/api/docs
+**Scalar API Reference:** http://localhost:3000/api/docs
+
+Modern API documentation with built-in testing capabilities:
+- 🎨 **Three-column layout** - Sidebar navigation, documentation, and API client
+- 🧪 **Interactive testing** - Send requests directly from the browser (Postman-like)
+- 💻 **Code generation** - Copy-paste examples in 20+ languages (cURL, JavaScript, Python, Go, etc.)
+- 🔐 **Authentication support** - Configure Bearer tokens and API keys
+- 🌙 **Dark mode** - Easy on the eyes
+- 🤖 **AI assistant** - Ask questions about endpoints
 
 ### Authentication
 
@@ -533,7 +541,7 @@ tmail-suite/
 | Gmail API | OAuth 2.0 | Email synchronization |
 | Background Jobs | node-cron | Scheduled tasks (polling, cleanup) |
 | UI | Tailwind CSS | Utility-first styling |
-| API Documentation | Swagger UI | Interactive API docs |
+| API Documentation | Scalar API Reference | Interactive API docs with testing |
 | Testing | Jest | Unit, integration, e2e tests |
 | Container | Docker | Containerized deployment |
 | CI/CD | GitHub Actions | Automated builds and deployments |
@@ -573,7 +581,7 @@ This project is licensed under the **GNU General Public License v3.0** - see the
 - [Next.js](https://nextjs.org/) - React framework
 - [Prisma](https://www.prisma.io/) - Database ORM
 - [Google Gmail API](https://developers.google.com/gmail/api) - Email integration
-- [Swagger UI](https://swagger.io/tools/swagger-ui/) - API documentation
+- [Scalar](https://scalar.com/) - Modern API documentation
 - [Tailwind CSS](https://tailwindcss.com/) - CSS framework
 
 ---

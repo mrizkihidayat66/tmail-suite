@@ -3,10 +3,36 @@ import { NextResponse } from "next/server";
 /**
  * OpenAPI Documentation Route
  * 
- * Provides Swagger UI for API documentation
+ * Provides Scalar API Reference for interactive API documentation
  * Access at: /api/docs
  */
 export async function GET() {
+  const configuration = {
+    theme: "default",
+    layout: "modern",
+    defaultOpenAllTags: false,
+    showSidebar: true,
+    hideModels: false,
+    hideDownloadButton: false,
+    darkMode: false,
+    authentication: {
+      preferredSecurityScheme: "bearerAuth",
+      apiKey: {
+        token: ""
+      }
+    },
+    servers: [
+      {
+        url: "http://localhost:3000",
+        description: "Development server"
+      },
+      {
+        url: "https://api.tmail-suite.local",
+        description: "Production server"
+      }
+    ]
+  };
+
   const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -14,39 +40,16 @@ export async function GET() {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TMail Suite API Documentation</title>
-    <meta name="description" content="Interactive API documentation for TMail Suite" />
+    <meta name="description" content="Interactive API documentation for TMail Suite with Scalar" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css" />
   </head>
   <body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js" crossorigin></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js" crossorigin></script>
-    <script>
-      window.onload = () => {
-        fetch('/api/openapi')
-          .then(res => res.json())
-          .then(spec => {
-            window.ui = SwaggerUIBundle({
-              spec,
-              dom_id: '#swagger-ui',
-              presets: [
-                SwaggerUIBundle.presets.apis,
-                SwaggerUIStandalonePreset
-              ],
-              layout: 'StandaloneLayout',
-              deepLinking: true,
-              displayOperationId: true,
-              displayRequestDuration: true,
-              filter: true
-            });
-          })
-          .catch(err => {
-            document.getElementById('swagger-ui').innerHTML = 
-              '<div style="padding: 20px; color: red;">Failed to load API specification: ' + err.message + '</div>';
-          });
-      };
-    </script>
+    <script
+      id="api-reference"
+      data-url="/api/openapi"
+      data-configuration='${JSON.stringify(configuration)}'
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
 </html>
   `;
