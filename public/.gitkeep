@@ -1,0 +1,2 @@
+# This file ensures the public/ directory is tracked by Git
+# even when it's empty. Required for Docker builds.
