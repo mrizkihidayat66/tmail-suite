@@ -29,21 +29,21 @@ TMail Suite is a comprehensive temporary email management system with Gmail inte
 ## Authentication
 
 ### Session-based Authentication
-For web UI operations:
+For admin operations, use session-based authentication:
 1. Login via \`POST /api/v1/auth/login\`
-2. Session cookie is automatically set
-3. All subsequent requests include session automatically
+2. Receive session token in response
+3. Include token in subsequent requests via \`Authorization: Bearer <token>\` header
 
 ### API Key Authentication
-For programmatic access:
-1. Create API key via dashboard or \`POST /api/v1/api-keys\`
+For programmatic access, use API keys:
+1. Create API key via \`POST /api/v1/api-keys\`
 2. Include key in requests via \`Authorization: Bearer <api_key>\` header
 3. API keys support scoped permissions
 
 ## Rate Limiting
-- Default: 100 requests per minute per IP
-- Login: 5 attempts per 15 minutes
-- Authenticated requests have higher limits
+- Default: 100 requests per 15 minutes per IP
+- Authenticated: 1000 requests per 15 minutes
+- Burst protection: 10 requests per second
 
 ## Error Handling
 All errors follow consistent format:
@@ -52,6 +52,35 @@ All errors follow consistent format:
   "error": "Error message",
   "code": "ERROR_CODE",
   "details": {}
+}
+\`\`\`
+
+Common HTTP status codes:
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 422: Validation Error
+- 429: Too Many Requests
+- 500: Internal Server Error
+
+## Pagination
+List endpoints support pagination:
+- \`page\`: Page number (default: 1)
+- \`limit\`: Items per page (default: 20, max: 100)
+
+Response includes pagination metadata:
+\`\`\`json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5
+  }
 }
 \`\`\`
         `,
@@ -107,6 +136,35 @@ All errors follow consistent format:
             description: "Session token or API key (prefix: tm_)",
           },
         },
+        schemas: {
+          Error: {
+            type: "object",
+            properties: {
+              error: { type: "string", description: "Error message" },
+              code: { type: "string", description: "Error code" },
+              details: { type: "object", description: "Additional error details" },
+            },
+            required: ["error"],
+          },
+          Success: {
+            type: "object",
+            properties: {
+              success: { type: "boolean", description: "Operation success status" },
+              message: { type: "string", description: "Success message" },
+            },
+            required: ["success"],
+          },
+          Pagination: {
+            type: "object",
+            properties: {
+              page: { type: "integer", minimum: 1, description: "Current page number" },
+              limit: { type: "integer", minimum: 1, maximum: 100, description: "Items per page" },
+              total: { type: "integer", description: "Total number of items" },
+              totalPages: { type: "integer", description: "Total number of pages" },
+            },
+            required: ["page", "limit", "total", "totalPages"],
+          },
+        },
       },
     },
     apis: [
@@ -117,31 +175,30 @@ All errors follow consistent format:
 }
 
 /**
- * OpenAPI Documentation Route
+ * GET /api/docs
  * 
- * Provides Scalar API Reference for interactive API documentation
- * Access at: /api/docs (requires authentication)
+ * Dual-purpose endpoint (requires authentication via middleware):
+ * - ?format=json → Returns OpenAPI spec as JSON (used by Scalar internally)
+ * - No query     → Returns Scalar API Reference HTML
  * 
- * Query parameters:
- * - format=json: Returns OpenAPI spec in JSON format
- * - (no params): Returns Scalar HTML interface
+ * Both modes are protected by the same auth middleware, so no
+ * separate public endpoint is needed. The browser sends the session
+ * cookie automatically when Scalar fetches the spec from the same origin.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const format = searchParams.get("format");
 
-  // If format=json, return OpenAPI spec
-  if (format === "json") {
+  // Serve OpenAPI spec as JSON when requested
+  if (searchParams.get("format") === "json") {
     const spec = generateOpenAPISpec();
     return NextResponse.json(spec, {
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "private, no-cache, no-store, must-revalidate",
+        "Cache-Control": "private, no-cache",
       },
     });
   }
 
-  // Otherwise, return Scalar HTML interface
+  // Serve Scalar API Reference HTML
   const configuration = {
     theme: "default",
     layout: "modern",
@@ -153,36 +210,33 @@ export async function GET(request: NextRequest) {
     authentication: {
       preferredSecurityScheme: "bearerAuth",
       apiKey: {
-        token: ""
-      }
-    }
+        token: "",
+      },
+    },
   };
 
-  const html = `
-<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TMail Suite API Documentation</title>
-    <meta name="description" content="Interactive API documentation for TMail Suite with Scalar" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="description" content="Interactive API documentation for TMail Suite" />
   </head>
   <body>
     <script
       id="api-reference"
-      data-url="/api/docs?format=json"
+      data-url="./docs?format=json"
       data-configuration='${JSON.stringify(configuration)}'
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
-</html>
-  `;
+</html>`;
 
   return new NextResponse(html, {
     headers: {
       "Content-Type": "text/html",
-      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      "Cache-Control": "private, no-cache",
     },
   });
 }
