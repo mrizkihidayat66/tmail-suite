@@ -10,6 +10,7 @@ FROM base AS builder
 RUN apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p public
 RUN npx prisma generate
 RUN npm run build
 
