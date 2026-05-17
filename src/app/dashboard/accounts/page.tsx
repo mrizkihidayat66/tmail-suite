@@ -7,9 +7,10 @@ import toast from "react-hot-toast";
 import {
   Plus, Zap, Search, Trash2, Eye, RotateCcw,
   ChevronLeft, ChevronRight, Download, Tag, Clock,
-  CheckSquare, Square,
+  CheckSquare, Square, Filter,
 } from "lucide-react";
 import { formatRelative, formatDateTime, cn } from "@/lib/shared/utils";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
 
 function StatusBadge({ account }: { account: any }) {
   const now = new Date();
@@ -26,9 +27,13 @@ function StatusBadge({ account }: { account: any }) {
 
 export default function AccountsPage() {
   const qc = useQueryClient();
+  const confirm = useConfirmModal();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [limit, setLimit] = useState(20);
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "expired">("");
+  const [labelFilter, setLabelFilter] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLabel, setBulkLabel] = useState("");
   const [showBulkLabel, setShowBulkLabel] = useState(false);
@@ -36,9 +41,16 @@ export default function AccountsPage() {
   const [bulkTtl, setBulkTtl] = useState(24);
 
   const { data, isLoading } = useQuery<{ accounts: any[]; total: number }>({
-    queryKey: ["accounts", page, search],
-    queryFn: () =>
-      fetch(`/api/v1/accounts?page=${page}&limit=20${search ? `&search=${encodeURIComponent(search)}` : ""}`).then((r) => r.json()),
+    queryKey: ["accounts", page, search, limit, statusFilter, labelFilter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      params.set("page", String(page));
+      params.set("limit", String(limit));
+      if (search) params.set("search", search);
+      if (statusFilter) params.set("status", statusFilter);
+      if (labelFilter) params.set("label", labelFilter);
+      return fetch(`/api/v1/accounts?${params.toString()}`).then((r) => r.json());
+    },
   });
 
   const deleteMutation = useMutation({
@@ -56,7 +68,7 @@ export default function AccountsPage() {
 
   const accounts = data?.accounts ?? [];
   const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / 20);
+  const totalPages = Math.ceil(total / limit);
   const allIds = accounts.map((a) => a.id);
   const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id));
 
@@ -73,7 +85,13 @@ export default function AccountsPage() {
   }
 
   async function bulkDelete() {
-    if (!confirm(`Delete ${selected.size} accounts?`)) return;
+    const ok = await confirm({
+      title: "Delete accounts",
+      description: `Are you sure you want to delete ${selected.size} account(s)? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     const ids = [...selected];
     await Promise.all(ids.map((id) => fetch(`/api/v1/accounts/${id}`, { method: "DELETE" })));
     setSelected(new Set());
@@ -169,6 +187,55 @@ export default function AccountsPage() {
           Search
         </button>
       </form>
+
+      {/* Filters toolbar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+          <Filter className="w-4 h-4" />
+          <span>Filters:</span>
+        </div>
+        <select
+          id="status-filter"
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value as "" | "active" | "expired"); setPage(1); setSelected(new Set()); }}
+          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        >
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="expired">Expired</option>
+        </select>
+        <input
+          id="label-filter"
+          type="text"
+          value={labelFilter}
+          onChange={(e) => { setLabelFilter(e.target.value); setPage(1); setSelected(new Set()); }}
+          placeholder="Filter by label…"
+          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+        />
+        <div className="ml-auto flex items-center gap-1.5 text-sm text-gray-500">
+          <span>Show:</span>
+          <select
+            id="limit-select"
+            value={limit}
+            onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); setSelected(new Set()); }}
+            className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span>items</span>
+        </div>
+        {(statusFilter || labelFilter) && (
+          <button
+            onClick={() => { setStatusFilter(""); setLabelFilter(""); setPage(1); setSelected(new Set()); }}
+            className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
 
       {selected.size > 0 && (
         <div id="bulk-actions-bar" className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl flex-wrap">
@@ -285,7 +352,15 @@ export default function AccountsPage() {
                         <RotateCcw className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => { if (confirm(`Delete ${a.email}?`)) deleteMutation.mutate(a.id); }}
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: "Delete account",
+                            description: `Are you sure you want to delete ${a.email}? This action cannot be undone.`,
+                            confirmLabel: "Delete",
+                            variant: "danger",
+                          });
+                          if (ok) deleteMutation.mutate(a.id);
+                        }}
                         className="p-1.5 rounded hover:bg-red-50 text-gray-500 hover:text-red-600"
                         title="Delete"
                       >

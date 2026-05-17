@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Globe, Settings2, Eye, EyeOff, KeyRound, AlertTriangle, Terminal, Copy, Check } from "lucide-react";
 import { cn, copyToClipboard } from "@/lib/shared/utils";
 import type { MeResponse, HealthStatus, AdminUserRow, GmailStatus, DomainRow } from "@/types";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
 
 type Tab = "account" | "system" | "users" | "gmail" | "domains" | "config";
 
@@ -27,8 +28,19 @@ function extractPrivateIpInfo(uri: string): { ip: string; port: string } | null 
 
 export default function SettingsPage() {
   const qc = useQueryClient();
+  const confirm = useConfirmModal();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>("system");
+  const router = useRouter();
+  const [tab, setTab] = useState<Tab>(() => {
+    const initial = (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null) as Tab | null;
+    const validTabs: Tab[] = ["account", "system", "users", "gmail", "domains", "config"];
+    return initial && validTabs.includes(initial) ? initial : "account";
+  });
+
+  const switchTab = useCallback((key: Tab) => {
+    setTab(key);
+    router.replace(`/dashboard/settings?tab=${key}`, { scroll: false });
+  }, [router]);
 
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [showPw, setShowPw] = useState(false);
@@ -36,6 +48,8 @@ export default function SettingsPage() {
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editDisplayName, setEditDisplayName] = useState("");
 
   const [newDomain, setNewDomain] = useState("");
 
@@ -60,7 +74,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const t = searchParams.get("tab") as Tab | null;
-    if (t) setTab(t);
+    const validTabs: Tab[] = ["account", "system", "users", "gmail", "domains", "config"];
+    if (t && validTabs.includes(t)) setTab(t);
     if (searchParams.get("gmail_connected")) {
       toast.success("Gmail connected successfully!");
       setTab("gmail");
@@ -231,7 +246,7 @@ export default function SettingsPage() {
         {TABS.map((t) => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key)}
+            onClick={() => switchTab(t.key)}
             className={cn(
               "flex-1 py-2.5 text-xs font-medium transition-colors border-b-2 -mb-px",
               tab === t.key ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
@@ -371,28 +386,57 @@ export default function SettingsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center gap-1 justify-end">
-                        <button
-                          onClick={async () => {
-                            const n = prompt("New display name:", u.displayName ?? "");
-                            if (n === null) return;
-                            await fetch(`/api/v1/admin/users/${u.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ displayName: n }),
-                            });
-                            qc.invalidateQueries({ queryKey: ["admin-users"] });
-                            toast.success("Updated");
-                          }}
-                          className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => { if (confirm(`Deactivate ${u.username}?`)) deleteUserMutation.mutate(u.id); }}
-                          className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {editingUserId === u.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={editDisplayName}
+                              onChange={(e) => setEditDisplayName(e.target.value)}
+                              className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Display name"
+                              autoFocus
+                            />
+                            <button
+                              onClick={async () => {
+                                await fetch(`/api/v1/admin/users/${u.id}`, {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ displayName: editDisplayName }),
+                                });
+                                qc.invalidateQueries({ queryKey: ["admin-users"] });
+                                toast.success("Updated");
+                                setEditingUserId(null);
+                              }}
+                              className="p-1.5 rounded hover:bg-green-50 text-green-600 transition-colors"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingUserId(null)}
+                              className="p-1.5 rounded hover:bg-gray-50 text-gray-400 transition-colors"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingUserId(u.id);
+                                setEditDisplayName(u.displayName ?? "");
+                              }}
+                              className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={async () => { const ok = await confirm({ title: "Deactivate user", description: `Are you sure you want to deactivate ${u.username}?`, confirmLabel: "Deactivate", variant: "danger" }); if (ok) deleteUserMutation.mutate(u.id); }}
+                              className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -460,7 +504,7 @@ export default function SettingsPage() {
                             {d.isActive ? "Disable" : "Enable"}
                           </button>
                           <button
-                            onClick={() => { if (confirm(`Remove domain ${d.domain}?`)) deleteDomainMutation.mutate(d.id); }}
+                            onClick={async () => { const ok = await confirm({ title: "Remove domain", description: `Are you sure you want to remove domain ${d.domain}?`, confirmLabel: "Remove", variant: "danger" }); if (ok) deleteDomainMutation.mutate(d.id); }}
                             className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -672,7 +716,7 @@ export default function SettingsPage() {
                   <RefreshCw className="w-4 h-4" />Reconnect
                 </a>
                 <button
-                  onClick={() => { if (confirm("Disconnect Gmail?")) disconnectMutation.mutate(); }}
+                  onClick={async () => { const ok = await confirm({ title: "Disconnect Gmail", description: "Are you sure you want to disconnect Gmail? Email syncing will stop until reconnected.", confirmLabel: "Disconnect", variant: "warning" }); if (ok) disconnectMutation.mutate(); }}
                   className="flex items-center gap-1.5 px-3 py-2 text-sm border border-red-200 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
                 >
                   <XCircle className="w-4 h-4" />Disconnect

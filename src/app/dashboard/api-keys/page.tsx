@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Plus, Trash2, RotateCcw, Copy, Check, X } from "lucide-react";
 import { formatRelative, cn, copyToClipboard, parseJsonSafe } from "@/lib/shared/utils";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
 
 const SCOPE_OPTIONS = [
   { value: "*", label: "Full Access" },
@@ -15,6 +16,7 @@ const SCOPE_OPTIONS = [
 
 export default function ApiKeysPage() {
   const qc = useQueryClient();
+  const confirm = useConfirmModal();
   const [showCreate, setShowCreate] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -203,10 +205,10 @@ export default function ApiKeysPage() {
                       >
                         {copied === k.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                       </button>
-                      <button onClick={() => { if (confirm("Rotate this key? The old key will be invalidated.")) rotateMutation.mutate(k.id); }} className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="Rotate">
+                      <button onClick={async () => { const ok = await confirm({ title: "Rotate API key", description: "Are you sure you want to rotate this key? The old key will be invalidated immediately.", confirmLabel: "Rotate", variant: "warning" }); if (ok) rotateMutation.mutate(k.id); }} className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="Rotate">
                         <RotateCcw className="w-4 h-4" />
                       </button>
-                      <button onClick={() => { if (confirm("Revoke this key?")) revokeMutation.mutate(k.id); }} className="p-1.5 rounded hover:bg-red-50 text-gray-500 hover:text-red-600" title="Revoke">
+                      <button onClick={async () => { const ok = await confirm({ title: "Revoke API key", description: "Are you sure you want to revoke this key? Any integrations using it will stop working.", confirmLabel: "Revoke", variant: "danger" }); if (ok) revokeMutation.mutate(k.id); }} className="p-1.5 rounded hover:bg-red-50 text-gray-500 hover:text-red-600" title="Revoke">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

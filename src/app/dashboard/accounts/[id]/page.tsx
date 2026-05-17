@@ -7,11 +7,13 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { ArrowLeft, Copy, Check, RefreshCw, Trash2, RotateCcw, Search } from "lucide-react";
 import { formatRelative, formatDateTime, cn, copyToClipboard } from "@/lib/shared/utils";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+  const confirm = useConfirmModal();
   const [tab, setTab] = useState<"inbox" | "stats" | "settings">("inbox");
   const [copied, setCopied] = useState<string | null>(null);
   const [emailPage, setEmailPage] = useState(1);
@@ -87,7 +89,7 @@ export default function AccountDetailPage() {
           <button onClick={() => resetMutation.mutate()} className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600" title="Reset password">
             <RotateCcw className="w-4 h-4" />
           </button>
-          <button onClick={() => { if (confirm(`Delete ${account.email}?`)) deleteMutation.mutate(); }} className="p-2 border border-red-200 rounded-lg hover:bg-red-50 text-red-500" title="Delete">
+          <button onClick={async () => { const ok = await confirm({ title: "Delete account", description: `Are you sure you want to delete ${account.email}? This action cannot be undone.`, confirmLabel: "Delete", variant: "danger" }); if (ok) deleteMutation.mutate(); }} className="p-2 border border-red-200 rounded-lg hover:bg-red-50 text-red-500" title="Delete">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>

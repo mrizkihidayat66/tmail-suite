@@ -6,11 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "prebuild": "node scripts/generate-openapi.js",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "generate-openapi": "node scripts/generate-openapi.js",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
@@ -20,6 +18,7 @@
     "test:ci": "jest --ci --coverage --maxWorkers=2"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@prisma/client": "5.18.0",
     "@scalar/api-reference": "^1.46.4",
     "@tanstack/react-query": "5.51.1",
@@ -34,7 +33,6 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hot-toast": "2.4.1",
-    "swagger-jsdoc": "^6.2.8",
     "tailwind-merge": "2.4.0",
     "zod": "^3.23.8"
   },
@@ -49,7 +47,6 @@
     "@types/node-cron": "3.0.11",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
-    "@types/swagger-jsdoc": "^6.0.4",
     "autoprefixer": "10.4.20",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.5",

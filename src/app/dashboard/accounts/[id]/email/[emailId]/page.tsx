@@ -7,11 +7,13 @@ import toast from "react-hot-toast";
 import { ArrowLeft, Trash2, Code, AlignLeft, FileText } from "lucide-react";
 import { formatDateTime, cn } from "@/lib/shared/utils";
 import { parseJsonSafe } from "@/lib/shared/utils";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
 
 export default function EmailDetailPage() {
   const { id, emailId } = useParams<{ id: string; emailId: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+  const confirm = useConfirmModal();
   const [view, setView] = useState<"html" | "text" | "headers">("html");
 
   const { data: email, isLoading } = useQuery<any>({
@@ -52,7 +54,7 @@ export default function EmailDetailPage() {
           <h1 className="text-lg font-bold text-gray-900 truncate">{email.subject || "(no subject)"}</h1>
         </div>
         <button
-          onClick={() => { if (confirm("Delete this email?")) deleteMutation.mutate(); }}
+          onClick={async () => { const ok = await confirm({ title: "Delete email", description: "Are you sure you want to delete this email? This action cannot be undone.", confirmLabel: "Delete", variant: "danger" }); if (ok) deleteMutation.mutate(); }}
           className="p-2 border border-red-200 rounded-lg hover:bg-red-50 text-red-500"
         >
           <Trash2 className="w-4 h-4" />

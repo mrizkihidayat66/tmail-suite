@@ -1,7 +1,12 @@
 import { z } from "zod";
+import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+
+// Extend Zod with OpenAPI support
+extendZodWithOpenApi(z);
 
 /**
  * Common Schemas for API Documentation
+ * These schemas serve as single source of truth for both runtime validation AND OpenAPI spec generation.
  */
 
 // Error Response Schema
@@ -9,13 +14,13 @@ export const ErrorResponseSchema = z.object({
   error: z.string().describe("Error message"),
   code: z.string().optional().describe("Error code"),
   details: z.any().optional().describe("Additional error details"),
-});
+}).openapi("ErrorResponse");
 
 // Success Response Schema
 export const SuccessResponseSchema = z.object({
   success: z.boolean().describe("Operation success status"),
   message: z.string().optional().describe("Success message"),
-});
+}).openapi("SuccessResponse");
 
 // Pagination Schema
 export const PaginationSchema = z.object({
@@ -23,7 +28,7 @@ export const PaginationSchema = z.object({
   limit: z.number().int().min(1).max(100).default(20).describe("Items per page"),
   total: z.number().int().describe("Total number of items"),
   totalPages: z.number().int().describe("Total number of pages"),
-});
+}).openapi("Pagination");
 
 // Account Schema
 export const AccountSchema = z.object({
@@ -35,7 +40,7 @@ export const AccountSchema = z.object({
   createdAt: z.string().datetime().describe("Account creation date"),
   updatedAt: z.string().datetime().describe("Last update date"),
   deletedAt: z.string().datetime().nullable().optional().describe("Deletion date if soft deleted"),
-});
+}).openapi("Account");
 
 // Email Schema
 export const EmailSchema = z.object({
@@ -48,7 +53,7 @@ export const EmailSchema = z.object({
   body: z.string().optional().describe("Email body content"),
   receivedAt: z.string().datetime().describe("Email received date"),
   isRead: z.boolean().describe("Read status"),
-});
+}).openapi("Email");
 
 // API Key Schema
 export const ApiKeySchema = z.object({
@@ -61,7 +66,7 @@ export const ApiKeySchema = z.object({
   lastUsedAt: z.string().datetime().nullable().optional().describe("Last usage date"),
   createdAt: z.string().datetime().describe("Creation date"),
   revokedAt: z.string().datetime().nullable().optional().describe("Revocation date"),
-});
+}).openapi("ApiKey");
 
 // Domain Schema
 export const DomainSchema = z.object({
@@ -69,7 +74,7 @@ export const DomainSchema = z.object({
   domain: z.string().describe("Domain name"),
   isActive: z.boolean().describe("Active status"),
   createdAt: z.string().datetime().describe("Creation date"),
-});
+}).openapi("Domain");
 
 // System Stats Schema
 export const SystemStatsSchema = z.object({
@@ -83,14 +88,14 @@ export const SystemStatsSchema = z.object({
   gmailConnected: z.boolean().describe("Gmail connection status"),
   totalDomains: z.number().int().describe("Total number of domains"),
   activeDomains: z.number().int().describe("Number of active domains"),
-});
+}).openapi("SystemStats");
 
 // System Health Schema
 export const SystemHealthSchema = z.object({
   status: z.enum(["ok", "degraded"]).describe("Overall system status"),
   database: z.enum(["ok", "error"]).describe("Database status"),
   gmail: z.enum(["connected", "disconnected"]).describe("Gmail connection status"),
-});
+}).openapi("SystemHealth");
 
 // Create Account Request Schema
 export const CreateAccountRequestSchema = z.object({
@@ -99,32 +104,32 @@ export const CreateAccountRequestSchema = z.object({
   domainId: z.string().optional().describe("Domain ID (uses default if not provided)"),
   expiresInDays: z.number().int().min(1).max(365).default(7).describe("Account expiration in days"),
   usernamePattern: z.enum(["random", "en", "id", "zh", "ja"]).optional().describe("Username generation pattern"),
-});
+}).openapi("CreateAccountRequest");
 
 // Update Account Request Schema
 export const UpdateAccountRequestSchema = z.object({
   expiresAt: z.string().datetime().optional().describe("New expiration date"),
   password: z.string().min(8).optional().describe("New password"),
-});
+}).openapi("UpdateAccountRequest");
 
 // Create API Key Request Schema
 export const CreateApiKeyRequestSchema = z.object({
   name: z.string().min(1).max(100).describe("API Key name"),
   scopes: z.array(z.string()).min(1).describe("API Key scopes/permissions"),
   expiresInDays: z.number().int().min(1).optional().describe("Expiration in days (never expires if not provided)"),
-});
+}).openapi("CreateApiKeyRequest");
 
 // Update API Key Request Schema
 export const UpdateApiKeyRequestSchema = z.object({
   name: z.string().min(1).max(100).optional().describe("New API Key name"),
   scopes: z.array(z.string()).min(1).optional().describe("New API Key scopes"),
-});
+}).openapi("UpdateApiKeyRequest");
 
 // Login Request Schema
 export const LoginRequestSchema = z.object({
   username: z.string().min(1).describe("Admin username"),
   password: z.string().min(1).describe("Admin password"),
-});
+}).openapi("LoginRequest");
 
 // Admin User Schema
 export const AdminUserSchema = z.object({
@@ -132,18 +137,18 @@ export const AdminUserSchema = z.object({
   username: z.string().describe("Username"),
   displayName: z.string().describe("Display name"),
   mustChangePassword: z.boolean().optional().describe("Whether user must change password"),
-});
+}).openapi("AdminUser");
 
 // Login Response Schema
 export const LoginResponseSchema = z.object({
   user: AdminUserSchema.describe("User information"),
   mustChangePassword: z.boolean().describe("Whether user must change password"),
-});
+}).openapi("LoginResponse");
 
 // Logout Response Schema
 export const LogoutResponseSchema = z.object({
   message: z.string().describe("Logout confirmation message"),
-});
+}).openapi("LogoutResponse");
 
 // Bulk Create Accounts Request Schema
 export const BulkCreateAccountsRequestSchema = z.object({
@@ -151,7 +156,7 @@ export const BulkCreateAccountsRequestSchema = z.object({
   domainId: z.string().optional().describe("Domain ID for all accounts"),
   expiresInDays: z.number().int().min(1).max(365).default(7).describe("Expiration in days for all accounts"),
   usernamePattern: z.enum(["random", "en", "id", "zh", "ja"]).optional().describe("Username generation pattern"),
-});
+}).openapi("BulkCreateAccountsRequest");
 
 // Email Stats Schema
 export const EmailStatsSchema = z.object({
@@ -159,7 +164,7 @@ export const EmailStatsSchema = z.object({
   unreadEmails: z.number().int().describe("Number of unread emails"),
   last24Hours: z.number().int().describe("Emails received in last 24 hours"),
   last7Days: z.number().int().describe("Emails received in last 7 days"),
-});
+}).openapi("EmailStats");
 
 // Audit Log Schema
 export const AuditLogSchema = z.object({
@@ -175,7 +180,7 @@ export const AuditLogSchema = z.object({
   ipAddress: z.string().optional().describe("IP address"),
   userAgent: z.string().optional().describe("User agent"),
   createdAt: z.string().datetime().describe("Log creation date"),
-});
+}).openapi("AuditLog");
 
 // Export types
 export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
